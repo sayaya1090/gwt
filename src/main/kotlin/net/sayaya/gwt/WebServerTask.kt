@@ -1,4 +1,4 @@
-package net.sayaya
+package net.sayaya.gwt
 
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
@@ -31,6 +31,6 @@ abstract class WebServerTask: DefaultTask() {
         } catch(ignore: Exception) { } }
     }
     fun close() {
-        webServer.stop(1000, 1000)
+        webServer.stop()
     }
 }

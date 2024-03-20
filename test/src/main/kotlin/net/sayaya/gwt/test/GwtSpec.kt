@@ -1,4 +1,4 @@
-package net.sayaya.gwt
+package net.sayaya.gwt.test
 
 import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.spec.style.BehaviorSpec

@@ -1,4 +1,4 @@
-package net.sayaya
+package net.sayaya.gwt
 
 import kotlinx.coroutines.*
 import org.gradle.api.Plugin

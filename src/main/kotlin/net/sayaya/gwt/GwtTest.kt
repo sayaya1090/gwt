@@ -1,4 +1,4 @@
-package net.sayaya
+package net.sayaya.gwt
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
