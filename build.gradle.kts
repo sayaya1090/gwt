@@ -42,7 +42,7 @@ tasks {
         publications {
             register("maven", MavenPublication::class) {
                 groupId = "net.sayaya.gwt"
-                artifactId = "gradle.plugin"
+                artifactId = "net.sayaya.gwt.gradle.plugin"
                 version = "1.1.19"
             }
         }
