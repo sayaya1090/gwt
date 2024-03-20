@@ -41,8 +41,8 @@ tasks {
         }
         publications {
             register("maven", MavenPublication::class) {
-                groupId = "net.sayaya"
-                artifactId = "gwt-gradle-plugin"
+                groupId = "net.sayaya.gwt"
+                artifactId = "gradle.plugin"
                 version = "1.1.19"
             }
         }

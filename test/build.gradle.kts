@@ -24,6 +24,7 @@ tasks {
                 groupId = "net.sayaya"
                 artifactId = "gwt-test"
                 version = "1.0"
+                from(project.components["java"])
             }
         }
     }
