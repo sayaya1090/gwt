@@ -8,6 +8,8 @@ import org.openqa.selenium.By
 import org.openqa.selenium.WebElement
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
+import java.io.File
+import java.lang.Thread.sleep
 import kotlin.time.Duration.Companion.seconds
 
 abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body) {
@@ -18,17 +20,45 @@ abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body)
             result
         }
 
-        fun BehaviorSpec.Connect(name: String = "Connection", url: String, test: suspend BehaviorSpecGivenContainerScope.(ChromeDriver) -> Unit) {
+        fun BehaviorSpec.Given(html: String, module: String, port: Int = 8080, timeout: Int=30,
+                                 js: List<String> = emptyList(),
+                                 css: List<String> = emptyList(),
+                                 launcherDir: String = "src/test/resources/static",
+                                 createHtml: Boolean = true,
+                                 clear: Boolean = false,
+                                 name: String = "Connection", test: suspend BehaviorSpecGivenContainerScope.(ChromeDriver) -> Unit) {
             Given(name) {
+                val file: File
+                var clearTask: ()->Unit = { }
+                if(createHtml) {
+                    val fileName = if(html.contains("#")) html.substring(0, html.indexOf("#")) else html
+                    file = File("$launcherDir/$fileName")
+                    file.writeText(
+                        """
+                        <!DOCTYPE html>
+                        <html lang="ko">
+                            <head>
+                                <script type="text/javascript" src="$module/$module.nocache.js"></script>
+                                ${js.joinToString(separator = "\n        ") { "<script type=\"text/javascript\" src=\"$it\"></script>" }}
+                                ${css.joinToString(separator = "\n        ") { "<link rel=\"stylesheet\" href=\"$it\" />" }}
+                            </head>
+                            <body></body>
+                        </html>
+                        """.trimIndent()
+                    )
+                    if(clear) clearTask = { file.delete() }
+                }
                 val document = ChromeDriver(ChromeOptions().addArguments("--headless"))
-                document.get("http://127.0.0.1:8080/$url")
-                waitUntil(10.seconds) {                                                         // Wait until the GWT webserver is ready
+                document.get("http://127.0.0.1:$port/$html")
+                sleep(500)
+                waitUntil(timeout.seconds) {                                                         // Wait until the GWT webserver is ready
                     var body: WebElement? = null
                     try { body = document.findElement(By.tagName("body")) } catch(ignore: NoSuchElementException) { }
-                    body!=null && body.text.startsWith("Compiling").not() && body.text.isNotBlank()
+                    body!=null && body.text.startsWith("Compiling").not()
                 }
                 test(document)
                 document.quit()
+                clearTask.invoke()
             }
         }
     }
