@@ -23,7 +23,7 @@ tasks {
             register("maven", MavenPublication::class) {
                 groupId = "net.sayaya"
                 artifactId = "gwt-test"
-                version = "1.0"
+                version = "1.1"
                 from(project.components["java"])
             }
         }
