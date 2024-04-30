@@ -46,8 +46,8 @@ class GwtPlugin: Plugin<Project> {
     private fun checkCodeServerReady(port: Int) {
         val codeserverUrl = URI("http://127.0.0.1:$port/").toURL()
         val job = GlobalScope.launch {
-            repeat(30) {
-                delay(500)
+            repeat(100) {
+                delay(1000)
                 try {
                     val conn = codeserverUrl.openConnection() as HttpURLConnection
                     conn.requestMethod = "HEAD"

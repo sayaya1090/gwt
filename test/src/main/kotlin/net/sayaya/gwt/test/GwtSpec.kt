@@ -10,7 +10,6 @@ import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import java.io.File
 import java.lang.Thread.sleep
-import kotlin.math.min
 import kotlin.time.Duration.Companion.seconds
 
 abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body) {
@@ -51,9 +50,8 @@ abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body)
                 }
                 val document = ChromeDriver(ChromeOptions().addArguments("--headless"))
                 document.get("http://127.0.0.1:$port/$html")
-                val sleep = min(3000, timeout*1000L/3)
-                sleep(sleep)
-                waitUntil((timeout-sleep/1000).seconds) {                                                         // Wait until the GWT webserver is ready
+                waitUntil(timeout.seconds) {               // Wait until the GWT webserver is ready
+                    sleep(1000)
                     var body: WebElement? = null
                     try { body = document.findElement(By.tagName("body")) } catch(ignore: NoSuchElementException) { }
                     body!=null && body.text.startsWith("Compiling").not()
