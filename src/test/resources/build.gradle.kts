@@ -33,11 +33,11 @@ tasks {
         extraJvmArgs = listOf("-javaagent:${lombok}=ECJ")
         port = 8080
         codeServerPort = 8081
-        war = file("src/main/resources/static")
+        war = file("src/main/webapp")
     }
     gwtTest {
         modules = listOf("net.sayaya.blah.Test", "net.sayaya.blah.Index")
-        launcherDir = file("build/resources/test/static")
+        launcherDir = file("src/test/webapp")
         extraJvmArgs = listOf("-javaagent:${lombok}=ECJ")
         webserverPort = 8080
         port = 8081

@@ -23,7 +23,7 @@ abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body)
         fun BehaviorSpec.Given(html: String, module: String, port: Int = 8080, timeout: Int=30,
                                  js: List<String> = emptyList(),
                                  css: List<String> = emptyList(),
-                                 launcherDir: String = "src/test/resources/static",
+                                 launcherDir: String = "src/test/webapp",
                                  createHtml: Boolean = true,
                                  clear: Boolean = false,
                                  name: String = "Connection", test: suspend BehaviorSpecGivenContainerScope.(ChromeDriver) -> Unit) {
@@ -33,14 +33,13 @@ abstract class GwtSpec (body: BehaviorSpec.() -> Unit = {}) : BehaviorSpec(body)
                 if(createHtml) {
                     val fileName = if(html.contains("#")) html.substring(0, html.indexOf("#")) else html
                     file = File("$launcherDir/$fileName")
-                    file.writeText(
-                        """
+                    file.writeText("""
                         <!DOCTYPE html>
                         <html lang="ko">
                             <head>
                                 <script type="text/javascript" src="$module/$module.nocache.js"></script>
-                                ${js.joinToString(separator = "\n        ") { "<script type=\"text/javascript\" src=\"$it\"></script>" }}
-                                ${css.joinToString(separator = "\n        ") { "<link rel=\"stylesheet\" href=\"$it\" />" }}
+                                ${js.joinToString(separator = "\n") { "                                <script type=\"text/javascript\" src=\"$it\"></script>" }}
+                                ${css.joinToString(separator = "\n") { "                                <link rel=\"stylesheet\" href=\"$it\" />" }}
                             </head>
                             <body></body>
                         </html>
