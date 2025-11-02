@@ -1,0 +1,102 @@
+name: 'Coverage Summary'
+description: 'Parses a Kover XML report and generates a summary for the GitHub Job Summary page.'
+
+inputs:
+  report-path:
+    description: 'Path to the Kover XML report file.'
+    required: false
+    default: 'build/reports/kover/report.xml'
+  good-threshold:
+    description: 'Coverage threshold for a "good" status (✅).'
+    required: false
+    default: '80'
+  warn-threshold:
+    description: 'Coverage threshold for a "warn" status (⚠️).'
+    required: false
+    default: '50'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate Coverage Summary
+      shell: bash
+      run: |
+        # 입력값들을 변수로 받습니다. (env 대신 inputs 사용)
+        REPORT_FILE="${{ inputs.report-path }}"
+        GOOD_THRESHOLD=${{ inputs.good-threshold }}
+        WARN_THRESHOLD=${{ inputs.warn-threshold }}
+
+        # --- 1. 전체 요약 생성 ---
+        echo "### Kover Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Coverage | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|:---|:---:|:---:|" >> $GITHUB_STEP_SUMMARY
+
+        print_summary_row() {
+          local METRIC_NAME=$1
+          local COUNTER_TYPE=$(echo "$METRIC_NAME" | tr '[:lower:]' '[:upper:]')
+          local COUNTER_LINE=$(grep "<counter type=\"$COUNTER_TYPE\"" "$REPORT_FILE" | tail -n 1)
+        
+          # grep 결과가 없으면 변수가 비어있게 되므로, 기본값 0을 설정합니다.
+          local MISSED=$(echo "$COUNTER_LINE" | grep -o 'missed="[0-9]\+"' | cut -d'"' -f2)
+          local COVERED=$(echo "$COUNTER_LINE" | grep -o 'covered="[0-9]\+"' | cut -d'"' -f2)
+          MISSED=${MISSED:-0}
+          COVERED=${COVERED:-0}
+          local TOTAL=$((MISSED + COVERED))
+        
+          local PERCENTAGE=0
+          if [ "$TOTAL" -ne "0" ]; then
+            PERCENTAGE=$((COVERED * 100 / TOTAL))
+          fi
+        
+          local STATUS="❌"
+          if [ "$PERCENTAGE" -ge "$GOOD_THRESHOLD" ]; then
+            STATUS="✅"
+          elif [ "$PERCENTAGE" -ge "$WARN_THRESHOLD" ]; then
+            STATUS="⚠️"
+          fi
+        
+          echo "| **$METRIC_NAME** | \`$PERCENTAGE%\` ($COVERED / $TOTAL) | $STATUS |" >> $GITHUB_STEP_SUMMARY
+        }
+
+        print_summary_row "Line"
+        print_summary_row "Branch"
+        print_summary_row "Method"
+        print_summary_row "Class"
+        
+        echo "" >> $GITHUB_STEP_SUMMARY; echo "---" >> $GITHUB_STEP_SUMMARY; echo "" >> $GITHUB_STEP_SUMMARY
+
+        # --- 2. 클래스별 상세 내역 생성 ---
+        echo "#### Class-by-Class Details" >> $GITHUB_STEP_SUMMARY
+        echo "| Class | Line Cov. | Branch Cov. | Method Cov. |" >> $GITHUB_STEP_SUMMARY
+        echo "|:---|:---:|:---:|:---:|" >> $GITHUB_STEP_SUMMARY
+        
+        # awk 스크립트의 안정성 강화
+        awk -v GOOD="$GOOD_THRESHOLD" -v WARN="$WARN_THRESHOLD" '
+          function get_display_str(full_str) {
+              # match가 실패하면 arr 배열이 비므로, 기본값을 0으로 설정
+              match(full_str, /missed="([0-9]+)"/, arr_m); missed = arr_m[1] ? arr_m[1] : 0
+              match(full_str, /covered="([0-9]+)"/, arr_c); covered = arr_c[1] ? arr_c[1] : 0
+              total = covered + missed
+        
+              percentage_num = (total == 0) ? 100 : (covered * 100 / total)
+        
+              status = "❌"
+              if (percentage_num >= GOOD) status = "✅"
+              else if (percentage_num >= WARN) status = "⚠️"
+        
+              return sprintf("%s %.0f%%", status, percentage_num)
+          }
+          BEGIN { RS="</class>" }
+          /<class name="/ {
+              match($0, /<class name="([^"]+)"/, name_arr); fullClassName = name_arr[1]
+        
+              # 각 counter 라인을 찾아서 get_display_str 함수로 전달
+              match($0, /<counter type="LINE" [^>]*>/);   line_display = get_display_str(substr($0, RSTART, RLENGTH))
+              match($0, /<counter type="BRANCH" [^>]*>/); branch_display = get_display_str(substr($0, RSTART, RLENGTH))
+              match($0, /<counter type="METHOD" [^>]*>/); method_display = get_display_str(substr($0, RSTART, RLENGTH))
+        
+              print fullClassName "|" line_display "|" branch_display "|" method_display
+          }
+        ' "$REPORT_FILE" | sort | while IFS='|' read -r class_path line_cov branch_cov method_cov; do
+          echo "| \`$class_path\` | \`$line_cov\` | \`$branch_cov\` | \`$method_cov\` |" >> $GITHUB_STEP_SUMMARY
+        done
