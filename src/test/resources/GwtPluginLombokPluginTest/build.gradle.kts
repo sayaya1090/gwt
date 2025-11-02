@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.2.21"
-    id("dev.sayaya.gwt")
+    id("dev.sayaya.gwt.lombok")
 }
 
 repositories {
@@ -15,17 +15,12 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.42")
     testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
 }
-
 tasks {
     gwt {
         gwtVersion = "2.12.2"
         modules = listOf("com.example.App")
         war = file("src/main/webapp")
         sourceLevel = "auto"
-        devMode {
-            modules = listOf("com.example.Test")
-            war = file("src/test/webapp")
-        }
     }
     test {
         useJUnitPlatform()

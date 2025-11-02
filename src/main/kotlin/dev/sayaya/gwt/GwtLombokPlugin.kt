@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.docstr.gwt.AbstractBaseTask
+import org.gradle.kotlin.dsl.exclude
 
 /**
  * GWT를 위한 Lombok 어노테이션 처리를 설정하는 플러그인
@@ -15,6 +16,11 @@ import org.docstr.gwt.AbstractBaseTask
  */
 class GwtLombokPlugin : Plugin<Project> {
     override fun apply(project: Project) {
+        project.plugins.apply("java")
+        project.plugins.apply("org.docstr.gwt")
+        project.configurations.all {
+            exclude(group="jakarta.servlet", module="jakarta.servlet-api")
+        }
         project.extensions.getByType(SourceSetContainer::class.java).apply {
             named("main") {
                 java.srcDirs(project.layout.buildDirectory.dir("generated/sources/annotationProcessor/java/main"))

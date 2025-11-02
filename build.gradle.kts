@@ -4,17 +4,16 @@ plugins {
     id("maven-publish")
     id("org.jetbrains.kotlinx.kover") version "0.9.2"
 }
-val projectVersion = project.findProperty("version") as String? ?: System.getenv("version") as String
 
 group = "dev.sayaya"
-version = projectVersion
+version = "2.2.7"
 
 repositories {
     gradlePluginPortal()
     mavenCentral()
 }
 dependencies {
-    implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$projectVersion")
+    implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$version")
     implementation("io.ktor:ktor-server-core:3.3.1")
     implementation("io.ktor:ktor-server-netty:3.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
