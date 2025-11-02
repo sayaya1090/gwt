@@ -33,7 +33,7 @@ jobs:
           VERSION=${{ steps.version.outputs.VERSION }}
           sed -i "s/version = \".*\"/version = \"$VERSION\"/" build.gradle.kts
       - name: Build artifacts
-        run: gradle build --no-daemon
+        run: gradle build
       - name: Publish to GitHub Packages
         run: gradle publish --no-daemon
       - name: Create GitHub Release
