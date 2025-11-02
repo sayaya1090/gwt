@@ -73,7 +73,7 @@ class GwtPluginIntegrationTest : FunSpec({
 
         // jar 비활성화
         jarTask!!.enabled shouldBe false
-    }
+    }*/
     test("전체 통합 테스트가 성공해야 함") {
         val projectDir = tempdir()
         val resourceDir = File(javaClass.classLoader.getResource("GwtPluginIntegrationTest")!!.toURI())
@@ -85,9 +85,9 @@ class GwtPluginIntegrationTest : FunSpec({
             .withArguments("build", "--stacktrace")
 
         val result = runner.build()
-
+        println(result.output)
         result.output shouldContain "BUILD SUCCESSFUL"
         result.task(":build")?.outcome shouldBe TaskOutcome.SUCCESS
         println(result.output)
-    }*/
+    }
 })

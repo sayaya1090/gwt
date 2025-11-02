@@ -2,9 +2,11 @@ package dev.sayaya.gwt
 
 import org.docstr.gwt.GwtCompileTask
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.SourceSetContainer
 import javax.inject.Inject
 
+@CacheableTask
 abstract class GwtTestCompileTask @Inject constructor(objects: ObjectFactory) : GwtCompileTask(objects) {
     init {
         group = "GWT"
@@ -20,5 +22,6 @@ abstract class GwtTestCompileTask @Inject constructor(objects: ObjectFactory) : 
         classpath = testSourceSet.get().runtimeClasspath +
                 project.files(mainSourceSet.map { it.java.srcDirs }) +
                 project.files(testSourceSet.map { it.java.srcDirs })
+        dependsOn("processTestResources")
     }
 }
