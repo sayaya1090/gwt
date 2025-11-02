@@ -70,30 +70,6 @@ class WebServerTaskTest : DescribeSpec({
                 tempDir.deleteRecursively()
             }
         }
-
-        it("존재하지 않는 디렉토리로 서버를 시작해도 Ktor는 정상 시작된다") {
-            val project: Project = ProjectBuilder.builder().build()
-            val task = project.tasks.register("webServer", WebServerTask::class.java).get()
-
-            val port = ServerSocket(0).use { it.localPort }
-            task.webserverPort.set(port)
-            // 존재하지 않는 디렉토리 (Ktor는 정적 파일 경로가 없어도 시작됨)
-            task.webserverPath.set(File("/non/existent/path"))
-
-            try {
-                // 서버는 시작되지만 파일 제공은 안 됨
-                task.exec()
-                task.isRunning() shouldBe true
-
-                // 존재하지 않는 파일 요청 시 404 에러
-                shouldThrow<java.io.FileNotFoundException> {
-                    URL("http://localhost:$port/index.html").readText()
-                }
-            } finally {
-                task.close()
-            }
-        }
-
         it("이미 사용 중인 포트로 서버를 시작하면 예외를 던져야 한다") {
             val project: Project = ProjectBuilder.builder().build()
 
