@@ -40,7 +40,6 @@ import java.util.logging.Level
  * ```
  *
  * @property htmlPath 테스트할 HTML 파일 경로 (기본값: "src/test/webapp/test.html")
- * @property webServerPort 웹서버 포트 (기본값: 9876, GWT 플러그인 기본 포트)
  * @property headless headless 모드 사용 여부 (기본값: true)
  */
 abstract class GwtTestSpec(
@@ -53,20 +52,14 @@ abstract class GwtTestSpec(
     var htmlPath: String = "src/test/webapp/test.html"
 
     /**
-     * 웹서버 포트 (GWT 플러그인의 openWebServer 태스크가 사용하는 포트)
-     */
-    var webServerPort: Int = 9876
-
-    /**
      * Headless 모드 사용 여부
      */
     var headless: Boolean = true
 
     /**
      * ChromeDriver 인스턴스
-     * 테스트 내부에서 직접 접근할 수 있도록 internal로 공개됩니다.
      */
-    internal lateinit var document: ChromeDriver
+    lateinit var document: ChromeDriver
 
     init {
         body()

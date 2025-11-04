@@ -261,7 +261,6 @@ driver.clearConsoleLogs()
 ```kotlin
 class MyTest : GwtTestSpec({
     htmlPath = "src/test/webapp/test.html"  // HTML 파일 경로
-    webServerPort = 9876                    // 웹서버 포트 (기본값: 9876)
     headless = false                        // 브라우저 UI 표시
 
     // 테스트 로직...
