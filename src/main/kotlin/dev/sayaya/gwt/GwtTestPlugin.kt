@@ -82,9 +82,7 @@ class GwtTestPlugin : Plugin<Project> {
     private fun registerCloseWebserver(project: Project, openWebserver: TaskProvider<WebServerTask>): TaskProvider<Task> =
         project.tasks.register("closeWebServer") {
             doLast {
-                println(openWebserver.get().isRunning())
                 openWebserver.get().close()
-                println(openWebserver.get().isRunning())
             }
         }
 

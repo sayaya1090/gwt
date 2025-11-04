@@ -1,11 +1,8 @@
 package dev.sayaya.gwt.test
 
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.matchers.collections.shouldContain
-import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
@@ -26,35 +23,31 @@ import java.util.logging.Level
  *
  * ## 사용 예시
  * ```kotlin
- * class MyTest : GwtSeleniumSpec({
- *     htmlPath = "src/test/webapp/test.html"
- *
+ * @GwtHtml("src/test/webapp/test.html")
+ * class MyTest : GwtTestSpec({
  *     Given("모듈이 로드되면") {
  *         When("버튼을 클릭하면") {
  *             Then("로그가 출력되어야 한다") {
- *                 driver shouldContainLog "Expected message"
+ *                 document shouldContainLog "Expected message"
  *             }
  *         }
  *     }
  * })
  * ```
- *
- * @property htmlPath 테스트할 HTML 파일 경로 (기본값: "src/test/webapp/test.html")
- * @property headless headless 모드 사용 여부 (기본값: true)
  */
-abstract class GwtTestSpec(
+open class GwtTestSpec(
     body: GwtTestSpec.() -> Unit
 ) : BehaviorSpec() {
 
     /**
-     * 테스트할 HTML 파일 경로
+     * 테스트할 HTML 파일 경로 (어노테이션에서 자동으로 로드됨)
      */
-    var htmlPath: String = "src/test/webapp/test.html"
-
-    /**
-     * Headless 모드 사용 여부
-     */
-    var headless: Boolean = true
+    private val htmlPath: String by lazy { (
+            this::class.annotations
+                .filterIsInstance<GwtHtml>()
+                .firstOrNull() ?: throw IllegalStateException("@GwtHtml 어노테이션이 필요합니다")
+            ).path
+    }
 
     /**
      * ChromeDriver 인스턴스

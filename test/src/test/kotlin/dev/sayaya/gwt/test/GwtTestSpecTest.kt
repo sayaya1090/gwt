@@ -12,13 +12,11 @@ import java.io.File
  *
  * 이 클래스는 GwtTestSpec을 상속받아 그 기능을 직접 사용하며 검증합니다.
  */
+@GwtHtml("build/test-resources/GwtTestSpecTest/test.html")
 class GwtTestSpecTest : GwtTestSpec({
-    // 1. GwtTestSpec의 프로퍼티를 설정합니다.
-    htmlPath = "build/test-resources/GwtTestSpecTest/test.html"
-    headless = true
-    // 2. beforeSpec/afterSpec 콜백으로 테스트 환경을 설정하고 정리합니다.
+    // beforeSpec/afterSpec 콜백으로 테스트 환경을 설정하고 정리합니다.
     beforeSpec {
-        val testHtml = File(htmlPath)
+        val testHtml = File("build/test-resources/GwtTestSpecTest/test.html")
         testHtml.parentFile.mkdirs()
         testHtml.writeText("""
             <!DOCTYPE html>

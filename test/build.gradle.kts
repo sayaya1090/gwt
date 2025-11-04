@@ -19,6 +19,7 @@ dependencies {
 
     // Kotlin
     implementation(kotlin("stdlib"))
+    api(kotlin("reflect"))
 
     implementation("com.google.code.gson:gson:2.13.2")
 }

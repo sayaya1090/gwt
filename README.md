@@ -213,17 +213,16 @@ src/
 
 ```kotlin
 import dev.sayaya.gwt.test.GwtTestSpec
+import dev.sayaya.gwt.test.GwtHtml
 
+@GwtHtml("src/test/webapp/test.html")  // 테스트할 HTML 파일
 class MenuTest : GwtTestSpec({
-    htmlPath = "src/test/webapp/test.html"  // 테스트할 HTML 파일
-    headless = true                          // headless 모드 (기본값: true)
-
     Given("메뉴가 로드되면") {
         When("메뉴 버튼을 클릭하면") {
-            driver.findElement(By.id("menu-button")).click()
+            document.findElement(By.id("menu-button")).click()
 
             Then("메뉴가 표시되어야 한다") {
-                driver shouldContainLog "Menu opened"
+                document shouldContainLog "Menu opened"
             }
         }
     }
@@ -231,7 +230,7 @@ class MenuTest : GwtTestSpec({
     Given("잘못된 입력이 들어오면") {
         When("에러가 발생하면") {
             Then("에러 로그가 출력되지 않아야 한다") {
-                driver shouldNotContainLog "ERROR"
+                document shouldNotContainLog "ERROR"
             }
         }
     }
@@ -244,25 +243,23 @@ class MenuTest : GwtTestSpec({
 
 ```kotlin
 // 로그에 특정 텍스트가 포함되어 있는지 확인 (검증 후 자동 클리어)
-driver shouldContainLog "Expected message"
+document shouldContainLog "Expected message"
 
 // 로그에 특정 텍스트가 없는지 확인 (검증 후 자동 클리어)
-driver shouldNotContainLog "Error message"
+document shouldNotContainLog "Error message"
 
 // 모든 콘솔 로그 가져오기
-val logs: List<String> = driver.getConsoleLogs()
+val logs: List<String> = document.getConsoleLogs()
 
 // 콘솔 로그 수동 클리어
-driver.clearConsoleLogs()
+document.clearConsoleLogs()
 ```
 
 #### 설정 옵션
 
 ```kotlin
+@GwtHtml("src/test/webapp/test.html")  // HTML 파일 경로
 class MyTest : GwtTestSpec({
-    htmlPath = "src/test/webapp/test.html"  // HTML 파일 경로
-    headless = false                        // 브라우저 UI 표시
-
     // 테스트 로직...
 })
 ```
@@ -271,26 +268,26 @@ class MyTest : GwtTestSpec({
 
 ```kotlin
 import dev.sayaya.gwt.test.GwtTestSpec
+import dev.sayaya.gwt.test.GwtHtml
 import org.openqa.selenium.By
 
+@GwtHtml("src/test/webapp/test.html")
 class UserInterfaceTest : GwtTestSpec({
-    htmlPath = "src/test/webapp/test.html"
-
     Given("사용자 인터페이스가 로드되면") {
         When("로그인 버튼을 클릭하면") {
-            val loginButton = driver.findElement(By.id("login-btn"))
+            val loginButton = document.findElement(By.id("login-btn"))
             loginButton.click()
 
             Then("로그인 다이얼로그가 표시되어야 한다") {
-                driver shouldContainLog "Login dialog opened"
+                document shouldContainLog "Login dialog opened"
             }
         }
 
         When("사용자 이름을 입력하면") {
-            driver.findElement(By.id("username")).sendKeys("testuser")
+            document.findElement(By.id("username")).sendKeys("testuser")
 
             Then("입력 검증 로그가 출력되어야 한다") {
-                driver shouldContainLog "Username validated"
+                document shouldContainLog "Username validated"
             }
         }
     }
