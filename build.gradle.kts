@@ -25,6 +25,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     // 테스트 구현에 필요한 의존성
     testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
+    kover(project(":test"))
 }
 gradlePlugin {
     plugins {

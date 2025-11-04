@@ -21,7 +21,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
       - name: Test
-        run: gradle koverXmlReport
+        run: gradle koverXmlReport --continue
       - name: Report
         uses: ./.github/actions/coverage-summary
         with:

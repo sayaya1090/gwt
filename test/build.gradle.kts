@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     id("maven-publish")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 repositories {
