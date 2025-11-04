@@ -36,11 +36,14 @@ jobs:
         run: gradle build
       - name: Publish to GitHub Packages
         run: gradle publish --no-daemon
+      - name: Publish test module to GitHub Packages
+        run: gradle :test:publish --no-daemon
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             build/libs/*.jar
+            test/build/libs/*.jar
           body: |
             ## GWT Gradle Plugin ${{ steps.version.outputs.VERSION }}
 
@@ -65,6 +68,10 @@ jobs:
             // build.gradle.kts
             plugins {
                 id("dev.sayaya.gwt") version "${{ steps.version.outputs.VERSION }}"
+            }
+
+            dependencies {
+                testImplementation("dev.sayaya:gwt-test:${{ steps.version.outputs.VERSION }}")
             }
             ```
           draft: false

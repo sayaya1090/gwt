@@ -4,15 +4,24 @@
 
 ## ✨ 주요 기능
 
+### Gradle 플러그인
 - **Lombok 완벽 지원**: GWT 컴파일러가 Lombok 어노테이션을 처리할 수 있도록 `-javaagent`를 자동으로 설정합니다.
 - **테스트용 웹 서버 자동 관리**: GWT 테스트 실행 시 Ktor 기반의 내장 웹 서버를 자동으로 시작하고, 테스트가 끝나면(성공/실패 무관) 반드시 종료하여 리소스를 안전하게 정리합니다.
 - **HTML 호스트 파일 자동 생성**: 각 GWT 테스트 모듈에 필요한 HTML 파일을 자동으로 생성하여, 수동으로 파일을 관리할 필요가 없습니다. (`rename-to` 속성 포함)
 - **간소화된 테스트 설정**: 테스트 태스크에 `gwt` 확장을 통해 웹서버 포트 등 GWT 테스트 관련 설정을 직관적으로 관리할 수 있습니다.
 - **원활한 태스크 통합**: Gradle의 `test` 태스크를 실행하기만 하면 GWT 컴파일, 서버 실행, 테스트, 서버 종료까지 모든 과정이 자동으로 처리됩니다.
 
+### kotest+selenium 테스트 라이브러리 (`gwt-test`)
+- **GWT 전용 테스트 베이스**: Kotest BehaviorSpec을 확장한 `GwtTestSpec` 제공
+- **자동 ChromeDriver 설정**: Headless 모드, 브라우저 로깅 자동 활성화
+- **콘솔 로그 검증**: `shouldContainLog`, `shouldNotContainLog` 등 편리한 매처 제공
+- **자동 리소스 정리**: 테스트 종료 시 WebDriver 자동 종료
+
 ## 🚀 시작하기
 
-### Gradle (Kotlin DSL)
+### 1. Gradle 플러그인 설정
+
+#### Kotlin DSL
 
 `build.gradle.kts` 파일의 `plugins` 블록에 플러그인을 추가합니다.
 
@@ -22,11 +31,21 @@ plugins {
 }
 ```
 
-### Gradle (Groovy DSL)
+#### Groovy DSL
 
 ```groovy
 plugins {
     id 'dev.sayaya.gwt' version '2.2.7'
+}
+```
+
+### 2. kotest+selenium 테스트 라이브러리 추가 (선택사항)
+
+kotest+selenium을 사용한 브라우저 테스트가 필요한 경우:
+
+```kotlin
+dependencies {
+    testImplementation("dev.sayaya:gwt-test:2.2.7")
 }
 ```
 
@@ -77,9 +96,9 @@ main과 test 소스를 모두 포함하여 GWT 테스트 모듈을 컴파일합�
 ./gradlew test
 ```
 
-## 사용 예시
+## 📖 사용 예시
 
-### 기본 설정
+### 기본 플러그인 설정
 
 ```kotlin
 plugins {
@@ -186,12 +205,111 @@ src/
 
 **생성 위치:** `gwt.war` 디렉토리 (기본값: `src/main/webapp`)
 
+## kotest 테스트 작성하기
+
+`gwt-test` 라이브러리를 사용하면 kotest+selenium 기반 브라우저 테스트를 간편하게 작성할 수 있습니다.
+
+### 기본 사용법
+
+```kotlin
+import dev.sayaya.gwt.test.GwtTestSpec
+
+class MenuTest : GwtTestSpec({
+    htmlPath = "src/test/webapp/test.html"  // 테스트할 HTML 파일
+    headless = true                          // headless 모드 (기본값: true)
+
+    Given("메뉴가 로드되면") {
+        When("메뉴 버튼을 클릭하면") {
+            driver.findElement(By.id("menu-button")).click()
+
+            Then("메뉴가 표시되어야 한다") {
+                driver shouldContainLog "Menu opened"
+            }
+        }
+    }
+
+    Given("잘못된 입력이 들어오면") {
+        When("에러가 발생하면") {
+            Then("에러 로그가 출력되지 않아야 한다") {
+                driver shouldNotContainLog "ERROR"
+            }
+        }
+    }
+})
+```
+
+### 제공되는 헬퍼 메서드
+
+#### 콘솔 로그 검증
+
+```kotlin
+// 로그에 특정 텍스트가 포함되어 있는지 확인 (검증 후 자동 클리어)
+driver shouldContainLog "Expected message"
+
+// 로그에 특정 텍스트가 없는지 확인 (검증 후 자동 클리어)
+driver shouldNotContainLog "Error message"
+
+// 모든 콘솔 로그 가져오기
+val logs: List<String> = driver.getConsoleLogs()
+
+// 콘솔 로그 수동 클리어
+driver.clearConsoleLogs()
+```
+
+#### 설정 옵션
+
+```kotlin
+class MyTest : GwtTestSpec({
+    htmlPath = "src/test/webapp/test.html"  // HTML 파일 경로
+    webServerPort = 9876                    // 웹서버 포트 (기본값: 9876)
+    headless = false                        // 브라우저 UI 표시
+
+    // 테스트 로직...
+})
+```
+
+### 실제 사용 예시
+
+```kotlin
+import dev.sayaya.gwt.test.GwtTestSpec
+import org.openqa.selenium.By
+
+class UserInterfaceTest : GwtTestSpec({
+    htmlPath = "src/test/webapp/test.html"
+
+    Given("사용자 인터페이스가 로드되면") {
+        When("로그인 버튼을 클릭하면") {
+            val loginButton = driver.findElement(By.id("login-btn"))
+            loginButton.click()
+
+            Then("로그인 다이얼로그가 표시되어야 한다") {
+                driver shouldContainLog "Login dialog opened"
+            }
+        }
+
+        When("사용자 이름을 입력하면") {
+            driver.findElement(By.id("username")).sendKeys("testuser")
+
+            Then("입력 검증 로그가 출력되어야 한다") {
+                driver shouldContainLog "Username validated"
+            }
+        }
+    }
+})
+```
+
 ## 요구사항
 
+### Gradle 플러그인
 - Gradle 8.0+
 - Kotlin 1.9+ (Kotlin DSL용)
 - Java 11+
 - GWT 2.10.0+
+
+### kotest+selenium 테스트 라이브러리
+- ChromeDriver (자동 다운로드됨)
+- Kotest 6.0+
+- Selenium 4.27+
 
 ## 📦 배포
 

@@ -5,12 +5,18 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.2"
 }
 
-group = "dev.sayaya"
-version = "2.2.7"
+allprojects {
+    group = "dev.sayaya"
+    version = "2.2.7"
 
-repositories {
-    gradlePluginPortal()
-    mavenCentral()
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply(plugin = "kotlin")
 }
 dependencies {
     implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$version")
