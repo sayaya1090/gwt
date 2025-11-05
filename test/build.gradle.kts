@@ -18,10 +18,10 @@ dependencies {
     api("io.kotest:kotest-assertions-core:6.0.4")
 
     // Kotlin
-    implementation(kotlin("stdlib"))
+    api(kotlin("stdlib"))
     api(kotlin("reflect"))
 
-    implementation("com.google.code.gson:gson:2.13.2")
+    api("com.google.code.gson:gson:2.13.2")
 }
 
 tasks {
