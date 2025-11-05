@@ -48,6 +48,7 @@ abstract class GwtTestCompileTask @Inject constructor(objects: ObjectFactory) : 
     }
     @TaskAction override fun exec() {
         modules.get().forEach(::ensureTestHtmlFileForModule)
+        super.exec()
     }
     private fun ensureTestHtmlFileForModule(module: String) {
         val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
