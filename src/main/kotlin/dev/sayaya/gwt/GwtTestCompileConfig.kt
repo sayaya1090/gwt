@@ -1,8 +1,14 @@
 package dev.sayaya.gwt
 
+import org.docstr.gwt.GwtCompileConfig
 import org.docstr.gwt.GwtPluginExtension
+import org.docstr.gwt.options.CompilerOptions
+import org.docstr.gwt.options.DevModeOptions
+import org.docstr.gwt.options.GwtTestOptions
+import org.docstr.gwt.options.SuperDevOptions
 import org.gradle.api.Action
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 
@@ -15,64 +21,42 @@ import org.gradle.api.provider.Property
  */
 class GwtTestCompileConfig(private val extension: GwtPluginExtension) : Action<GwtTestCompileTask> {
     override fun execute(task: GwtTestCompileTask) {
-        val devMode = extension.devMode
-        val project = task.project
-
-        // devMode와 기본 gwt 설정 간의 값 승계 로직을 사용하여 프로퍼티를 설정합니다.
-        setProperty(task.logLevel, devMode.logLevel, extension.logLevel)
-        setProperty(task.gen, devMode.gen, extension.gen)
-        setProperty(task.war, devMode.war, extension.war)
-        setProperty(task.deploy, devMode.deploy, extension.deploy)
-        setProperty(task.extra, devMode.extra, extension.extra)
-        setProperty(task.cacheDir, devMode.cacheDir, extension.cacheDir)
-        setProperty(task.workDir, devMode.workDir, extension.workDir)
-        setProperty(task.sourceLevel, devMode.sourceLevel, extension.sourceLevel)
-        setProperty(task.style, devMode.style, extension.style)
-        setProperty(task.incremental, devMode.incremental, extension.incremental)
-        setProperty(task.failOnError, devMode.failOnError, extension.failOnError)
-        setProperty(task.generateJsInteropExports, devMode.generateJsInteropExports, extension.generateJsInteropExports)
-        setProperty(task.methodNameDisplayMode, devMode.methodNameDisplayMode, extension.methodNameDisplayMode)
-
-        // List 타입 프로퍼티 설정
-        setListProperty(task.includeJsInteropExports, devMode.includeJsInteropExports, extension.includeJsInteropExports)
-        setListProperty(task.excludeJsInteropExports, devMode.excludeJsInteropExports, extension.excludeJsInteropExports)
-        setListProperty(task.setProperty, devMode.setProperty, extension.setProperty)
-        setListProperty(task.modules, devMode.modules, extension.modules)
-
-        // FileCollection 타입 프로퍼티 설정
-        setFileCollection(task.extraSourceDirs, devMode.extraSourceDirs, extension.extraSourceDirs)
-
-        // 클래스패스와 인자 설정
-        task.configureClasspath(project)
-        task.configureArgs()
+        val delegate = GwtCompileConfig(GwtDevPluginExtension(extension))
+        delegate.execute(task)
     }
+    companion object {
+        private fun <T: Any> Property<T>.withConvention(fallback: Property<T>): Property<T> = convention(fallback)
+        private fun DirectoryProperty.withConvention(fallback: DirectoryProperty): DirectoryProperty = convention(fallback)
+        private fun <T: Any> ListProperty<T>.withConvention(fallback: ListProperty<T>): ListProperty<T> = convention(fallback)
+        private fun ConfigurableFileCollection.withConvention(fallback: ConfigurableFileCollection): ConfigurableFileCollection = convention(fallback)
 
-    /**
-     * devMode의 값을 우선으로 하여 Property를 설정하는 헬퍼 함수.
-     */
-    private fun <T : Any> setProperty(target: Property<T>, devModeProp: Property<T>, baseProp: Property<T>, default: T? = null) {
-        if (devModeProp.isPresent) target.set(devModeProp)
-        else if (baseProp.isPresent) target.set(baseProp)
-    }
-
-    /**
-     * devMode의 값을 우선으로 하여 ListProperty를 설정하는 헬퍼 함수.
-     */
-    private fun <T : Any> setListProperty(target: ListProperty<T>, devModeProp: ListProperty<T>, baseProp: ListProperty<T>) {
-        val devValue = devModeProp.getOrElse(emptyList())
-        if (devValue.isNotEmpty()) target.set(devValue)
-        else target.set(baseProp)
-    }
-
-    /**
-     * devMode의 값을 우선으로 하여 ConfigurableFileCollection을 설정하는 헬퍼 함수.
-     */
-    private fun setFileCollection(
-        target: ConfigurableFileCollection,
-        devModeCollection: ConfigurableFileCollection,
-        baseCollection: ConfigurableFileCollection
-    ) {
-        if (!devModeCollection.isEmpty) target.from(devModeCollection)
-        else if (!baseCollection.isEmpty) target.from(baseCollection)
+        private class GwtDevPluginExtension(private val extension: GwtPluginExtension): GwtPluginExtension() {
+            override fun getGwtVersion(): Property<String> = extension.gwtVersion
+            override fun getJakarta(): Property<Boolean> = extension.jakarta
+            override fun getCompiler(): CompilerOptions = extension.compiler
+            override fun getDevMode(): DevModeOptions = extension.devMode
+            override fun getGwtTest(): GwtTestOptions = extension.gwtTest
+            override fun getSuperDev(): SuperDevOptions = extension.superDev
+            override fun getMinHeapSize(): Property<String> = extension.devMode.minHeapSize.withConvention(extension.minHeapSize)
+            override fun getMaxHeapSize(): Property<String> = extension.devMode.maxHeapSize.withConvention(extension.maxHeapSize)
+            override fun getLogLevel(): Property<String> = extension.devMode.logLevel.withConvention(extension.logLevel)
+            override fun getWorkDir(): DirectoryProperty = extension.devMode.workDir.withConvention(extension.workDir)
+            override fun getGen(): DirectoryProperty = extension.devMode.gen.withConvention(extension.gen)
+            override fun getWar(): DirectoryProperty = extension.devMode.war.withConvention(extension.war)
+            override fun getDeploy(): DirectoryProperty = extension.devMode.deploy.withConvention(extension.deploy)
+            override fun getExtra(): DirectoryProperty = extension.devMode.extra.withConvention(extension.extra)
+            override fun getCacheDir(): DirectoryProperty = extension.devMode.cacheDir.withConvention(extension.cacheDir)
+            override fun getGenerateJsInteropExports(): Property<Boolean> = extension.devMode.generateJsInteropExports.withConvention(extension.generateJsInteropExports)
+            override fun getIncludeJsInteropExports(): ListProperty<String> = extension.devMode.includeJsInteropExports.withConvention(extension.includeJsInteropExports)
+            override fun getExcludeJsInteropExports(): ListProperty<String> = extension.devMode.excludeJsInteropExports.withConvention(extension.excludeJsInteropExports)
+            override fun getMethodNameDisplayMode(): Property<String> = extension.devMode.methodNameDisplayMode.withConvention(extension.methodNameDisplayMode)
+            override fun getSourceLevel(): Property<String> = extension.devMode.sourceLevel.withConvention(extension.sourceLevel)
+            override fun getIncremental(): Property<Boolean> = extension.devMode.incremental.withConvention(extension.incremental)
+            override fun getStyle(): Property<String> = extension.devMode.style.withConvention(extension.style)
+            override fun getFailOnError(): Property<Boolean> = extension.devMode.failOnError.withConvention(extension.failOnError)
+            override fun getSetProperty(): ListProperty<String> = extension.devMode.setProperty.withConvention(extension.setProperty)
+            override fun getModules(): ListProperty<String> = extension.devMode.modules.withConvention(extension.modules)
+            override fun getExtraSourceDirs(): ConfigurableFileCollection = extension.devMode.extraSourceDirs.withConvention(extension.extraSourceDirs)
+        }
     }
 }
