@@ -2,8 +2,10 @@ package dev.sayaya.gwt
 
 import org.docstr.gwt.GwtCompileTask
 import org.gradle.api.GradleException
+import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.w3c.dom.Document
@@ -33,22 +35,38 @@ abstract class GwtTestCompileTask @Inject constructor(objects: ObjectFactory) : 
     init {
         group = "GWT"
         description = "Compiles GWT test sources"
-
-        val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
-        val mainSourceSet = sourceSets.named("main")
-        val testSourceSet = sourceSets.named("test")
-
-        // GWT 테스트 컴파일에 필요한 클래스패스를 지연 설정합니다.
-        // 1. test의 런타임 클래스패스 (컴파일된 클래스 및 모든 의존성)
-        // 2. main과 test의 소스 디렉터리 (GWT 컴파일러가 .java 파일을 찾기 위해 필요)
-        classpath = testSourceSet.get().runtimeClasspath +
-                project.files(mainSourceSet.map { it.java.srcDirs }) +
-                project.files(testSourceSet.map { it.java.srcDirs })
         dependsOn("processTestResources")
+        dependsOn("gwtCompile")
+    }
+    override fun configureClasspath(project: Project) {
+        // 부모 클래스의 메인 소스 클래스패스 구성
+        super.configureClasspath(project)
+
+        // 테스트 소스 및 클래스패스 추가
+        val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+        val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
+
+        // 테스트 소스 경로
+        val testSourcePaths = project.files(testSourceSet.allSource.srcDirs)
+
+        // 테스트 출력 클래스패스
+        val testOutputClasspath = testSourceSet.output.classesDirs
+            .plus(project.files(testSourceSet.output.resourcesDir))
+
+        // 테스트 런타임 클래스패스 (GWT 라이브러리 및 모든 테스트 의존성 포함)
+        val testRuntimeClasspath = testSourceSet.runtimeClasspath
+
+        // 기존 클래스패스에 테스트 관련 클래스패스 추가
+        classpath(
+            classpath,
+            testSourcePaths,
+            testOutputClasspath,
+            testRuntimeClasspath
+        )
     }
     @TaskAction override fun exec() {
-        modules.get().forEach(::ensureTestHtmlFileForModule)
         super.exec()
+        modules.get().forEach(::ensureTestHtmlFileForModule)
     }
     private fun ensureTestHtmlFileForModule(module: String) {
         val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
