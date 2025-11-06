@@ -1,6 +1,8 @@
 package dev.sayaya.gwt.test
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -100,7 +102,7 @@ open class GwtTestSpec(
      * 브라우저 로그에서 순수한 메시지만 파싱합니다.
      */
     private val logRegex = Regex("""\s+\d+:\d+\s+""")
-    private val gson = Gson()
+    private val gson = GsonBuilder().setStrictness(Strictness.LENIENT).create()
     private fun parseMessage(logEntry: LogEntry): Any {
         val rawMessage = logEntry.message
         val parts = logRegex.split(rawMessage, limit = 2)

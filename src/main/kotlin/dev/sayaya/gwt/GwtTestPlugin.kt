@@ -4,6 +4,7 @@ import org.docstr.gwt.GwtDevModeConfig
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.docstr.gwt.GwtPluginExtension
+import org.gradle.api.Action
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
@@ -36,11 +37,26 @@ class GwtTestPlugin : Plugin<Project> {
 
         // 2. 태스크 등록
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
+        val configureClasspathTask = registerConfigureClasspathTask(project)
         val gwtCompileTask = project.tasks.named("gwtCompile")
+        val gwtDevModeTask = project.tasks.named("gwtDevMode")
+        val processTestResourcesTask = project.tasks.named("processTestResources")
         val gwtTestCompileTask = project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java, GwtTestCompileConfig(extension))
         val openWebserverTask = registerOpenWebserverTask(project, extension)
         val closeWebserverTask = registerCloseWebserver(project, openWebserverTask)
         val gwtTestTask = registerGwtTest(project)
+        val gwtGenerateHtmlTask = generateHtmlTask(project)
+        gwtGenerateHtmlTask.configure {
+            dependsOn(processTestResourcesTask)
+        }
+        gwtTestCompileTask.configure {
+            dependsOn(configureClasspathTask)
+            dependsOn(gwtGenerateHtmlTask)
+        }
+        gwtDevModeTask.configure {
+            dependsOn(configureClasspathTask)
+            dependsOn(gwtGenerateHtmlTask)
+        }
 
         // 3. 태스크 설정 및 의존성 연결
         configureJavaCompile(project)
@@ -50,10 +66,25 @@ class GwtTestPlugin : Plugin<Project> {
     }
 
     /**
+     * 클래스패스 설정 태스크 등록
+     */
+    private fun registerConfigureClasspathTask(project: Project): TaskProvider<GwtConfigureTestClasspathTask> =
+        project.tasks.register("gwtConfigureTestClasspath", GwtConfigureTestClasspathTask::class.java)
+
+
+    /**
      * GWT 테스트 태스크 등록 (코드서버)
      */
     private fun registerGwtTest(project: Project): TaskProvider<GwtTestTask> =
         project.tasks.register("gwtTest", GwtTestTask::class.java)
+
+    // HTML 생성 태스크 등록
+    private fun generateHtmlTask(project: Project): TaskProvider<GwtGenerateTestHtmlTask> =
+        project.tasks.register("gwtGenerateTestHtml", GwtGenerateTestHtmlTask::class.java, Action<GwtGenerateTestHtmlTask> {
+            val extension = project.extensions.getByType(GwtPluginExtension::class.java)
+            this.modules.set(extension.devMode.modules.orElse(extension.modules))
+            this.war.set(extension.devMode.war.orElse(extension.war))
+        })
 
     /**
      * WebServerTask를 등록하고 기본 설정을 수행합니다.

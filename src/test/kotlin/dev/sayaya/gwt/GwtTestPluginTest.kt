@@ -49,12 +49,6 @@ class GwtTestPluginTest : DescribeSpec({
                 project.tasks.getByName("gwtTestCompile").shouldBeInstanceOf<GwtTestCompileTask>()
             }
 
-            it("는 'processTestResources' 태스크에 의존해야 한다") {
-                val task = project.tasks.getByName("gwtTestCompile")
-                val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
-                dependencyNames shouldContain "processTestResources"
-            }
-
             it("는 modules 프로퍼티가 gwt.devMode.modules 값으로 설정되어야 한다") {
                 // 태스크가 등록될 때 설정 액션이 실행되므로, 다시 조회해야 최신 설정이 반영됩니다.
                 val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask

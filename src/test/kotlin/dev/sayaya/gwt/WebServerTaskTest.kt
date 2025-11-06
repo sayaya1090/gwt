@@ -9,7 +9,7 @@ import java.io.File
 import java.net.BindException
 import java.net.ConnectException
 import java.net.ServerSocket
-import java.net.URL
+import java.net.URI
 import kotlin.io.path.createTempDirectory
 
 class WebServerTaskTest : DescribeSpec({
@@ -39,7 +39,7 @@ class WebServerTaskTest : DescribeSpec({
                 task.isRunning() shouldBe true
 
                 // HTTP 요청을 보내 파일 내용을 가져옵니다.
-                val response = URL("http://localhost:$port/index.html").readText()
+                val response = URI.create("http://localhost:$port/index.html").toURL().readText()
                 response shouldBe "Hello from WebServerTask!"
 
             } finally {
@@ -179,7 +179,7 @@ class WebServerTaskTest : DescribeSpec({
                     // 잠시 대기 후 연결 시도 시 실패해야 함
                     Thread.sleep(500)
                     shouldThrow<ConnectException> {
-                        URL("http://localhost:$port/index.html").openStream()
+                        URI.create("http://localhost:$port/index.html").toURL().openStream()
                     }
                 } finally {
                     tempDir.deleteRecursively()
