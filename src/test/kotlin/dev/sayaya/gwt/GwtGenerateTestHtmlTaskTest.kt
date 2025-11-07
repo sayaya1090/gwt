@@ -8,7 +8,6 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
@@ -195,6 +194,35 @@ class GwtGenerateTestHtmlTaskTest : DescribeSpec({
 
                 // 정리
                 newWarDir.deleteRecursively()
+            }
+        }
+
+        context("모듈이 여러 개일 때") {
+            it("일부 HTML만 존재하면 나머지만 생성해야 한다") {
+                // 준비
+                val module1 = "com.example.Module1"
+                val module2 = "com.example.Module2"
+
+                // 두 모듈 모두 XML 파일 생성
+                listOf(module1, module2).forEach { moduleName ->
+                    val modulePath = moduleName.replace('.', '/')
+                    val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                    xmlFile.parentFile.mkdirs()
+                    xmlFile.writeText("""<module rename-to="${moduleName.substringAfterLast('.')}"></module>""")
+                }
+
+                // module1.html은 미리 생성
+                val existingHtml = File(warDir, "Module1.html")
+                existingHtml.writeText("<html>Existing</html>")
+
+                task.modules.set(listOf(module1, module2))
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                File(warDir, "Module1.html").readText() shouldBe "<html>Existing</html>" // 기존 유지
+                File(warDir, "Module2.html").exists() shouldBe true // 새로 생성
             }
         }
     }
@@ -681,6 +709,157 @@ class GwtGenerateTestHtmlTaskTest : DescribeSpec({
                 val content = htmlFile.readText()
 
                 content shouldContain """<title>default Test</title>"""
+            }
+        }
+    }
+
+    describe("Gradle UP-TO-DATE 체크") {
+        context("모듈 목록이 변경되지 않은 경우") {
+            it("outputHtmlFiles가 동일해야 한다") {
+                // 준비
+                val moduleName = "com.example.Stable"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="stable"></module>""")
+
+                task.modules.set(listOf(moduleName))
+
+                // 실행
+                val outputs1 = task.outputHtmlFiles.get()
+                val outputs2 = task.outputHtmlFiles.get()
+
+                // 검증
+                outputs1 shouldBe outputs2
+                outputs1.size shouldBe 1
+                outputs1.first().name shouldBe "stable.html"
+            }
+        }
+
+        context("모듈이 추가된 경우") {
+            it("outputHtmlFiles가 변경되어야 한다") {
+                // 준비
+                val module1 = "com.example.Module1"
+                val module2 = "com.example.Module2"
+
+                listOf(module1, module2).forEach { moduleName ->
+                    val modulePath = moduleName.replace('.', '/')
+                    val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                    xmlFile.parentFile.mkdirs()
+                    xmlFile.writeText("""<module rename-to="${moduleName.substringAfterLast('.')}"></module>""")
+                }
+
+                // 첫 번째 실행
+                task.modules.set(listOf(module1))
+                val outputs1 = task.outputHtmlFiles.get()
+
+                // 모듈 추가 후
+                task.modules.set(listOf(module1, module2))
+                val outputs2 = task.outputHtmlFiles.get()
+
+                // 검증
+                outputs1.size shouldBe 1
+                outputs2.size shouldBe 2
+                outputs1.first().name shouldBe "Module1.html"
+                outputs2.map { it.name } shouldBe listOf("Module1.html", "Module2.html")
+            }
+        }
+
+        context("모듈이 제거된 경우") {
+            it("outputHtmlFiles가 변경되어야 한다") {
+                // 준비
+                val module1 = "com.example.Module1"
+                val module2 = "com.example.Module2"
+
+                listOf(module1, module2).forEach { moduleName ->
+                    val modulePath = moduleName.replace('.', '/')
+                    val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                    xmlFile.parentFile.mkdirs()
+                    xmlFile.writeText("""<module rename-to="${moduleName.substringAfterLast('.')}"></module>""")
+                }
+
+                // 두 모듈로 시작
+                task.modules.set(listOf(module1, module2))
+                val outputs1 = task.outputHtmlFiles.get()
+
+                // 모듈 제거 후
+                task.modules.set(listOf(module1))
+                val outputs2 = task.outputHtmlFiles.get()
+
+                // 검증
+                outputs1.size shouldBe 2
+                outputs2.size shouldBe 1
+                outputs2.first().name shouldBe "Module1.html"
+            }
+        }
+
+        context("rename-to가 변경된 경우") {
+            it("outputHtmlFiles의 파일명이 변경되어야 한다") {
+                // 준비
+                val moduleName = "com.example.Renamed"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+
+                // 첫 번째 rename-to
+                xmlFile.writeText("""<module rename-to="oldname"></module>""")
+                task.modules.set(listOf(moduleName))
+                val outputs1 = task.outputHtmlFiles.get()
+
+                // rename-to 변경
+                xmlFile.writeText("""<module rename-to="newname"></module>""")
+                val outputs2 = task.outputHtmlFiles.get()
+
+                // 검증
+                outputs1.first().name shouldBe "oldname.html"
+                outputs2.first().name shouldBe "newname.html"
+            }
+        }
+
+        context("XML 파일이 없는 모듈인 경우") {
+            it("outputHtmlFiles는 원본 모듈명을 사용해야 한다") {
+                // 준비
+                val moduleName = "com.example.NoXml"
+                task.modules.set(listOf(moduleName))
+
+                // 실행 (XML 파일 없음)
+                val outputs = task.outputHtmlFiles.get()
+
+                // 검증
+                outputs.size shouldBe 1
+                outputs.first().name shouldBe "$moduleName.html"
+            }
+        }
+
+        context("outputHtmlFiles와 실제 생성 파일") {
+            it("outputHtmlFiles와 generateHtmlFiles()의 결과가 일치해야 한다") {
+                // 준비
+                val module1 = "com.example.Output1"
+                val module2 = "com.example.Output2"
+
+                listOf(module1, module2).forEach { moduleName ->
+                    val modulePath = moduleName.replace('.', '/')
+                    val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                    xmlFile.parentFile.mkdirs()
+                    xmlFile.writeText("""<module rename-to="${moduleName.substringAfterLast('.')}"></module>""")
+                }
+
+                task.modules.set(listOf(module1, module2))
+
+                // outputHtmlFiles 확인
+                val expectedOutputs = task.outputHtmlFiles.get()
+
+                // 실제 생성
+                task.generateHtmlFiles()
+
+                // 검증
+                expectedOutputs.forEach { expectedFile ->
+                    expectedFile.exists().shouldBeTrue()
+                }
+
+                val actualFiles = warDir.listFiles()?.filter { it.extension == "html" } ?: emptyList()
+                actualFiles.size shouldBe expectedOutputs.size
+                actualFiles.map { it.name }.sorted() shouldBe expectedOutputs.map { it.name }.sorted()
             }
         }
     }

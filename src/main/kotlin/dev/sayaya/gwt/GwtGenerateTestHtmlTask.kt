@@ -7,10 +7,12 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
@@ -110,6 +112,29 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
             ensureTestHtmlFileForModule(module)
         }
     }
+    /**
+     * 생성될 HTML 파일 목록
+     *
+     * 이 프로퍼티는 Gradle의 UP-TO-DATE 체크를 위해 사용됩니다.
+     * 모듈 목록이 변경되면 이 출력도 변경되어 태스크가 다시 실행됩니다.
+     */
+    @get:OutputFiles
+    val outputHtmlFiles: Provider<List<File>>
+        get() = modules.map { moduleList ->
+            moduleList.map { module ->
+                val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+                val packagePath = module.replace('.', '/')
+                val xmlFile = findXmlFileInSourceSets(sourceSets, "$packagePath.gwt.xml")
+
+                val moduleName = if (xmlFile != null) {
+                    getModuleNameFromXml(xmlFile, module)
+                } else {
+                    module
+                }
+
+                File(war.get().asFile, "$moduleName.html")
+            }
+        }
     /**
      * 특정 모듈에 대한 HTML 파일의 존재를 확인하고 필요시 생성합니다.
      *

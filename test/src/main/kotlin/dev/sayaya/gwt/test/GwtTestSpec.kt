@@ -2,6 +2,7 @@ package dev.sayaya.gwt.test
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonSyntaxException
 import com.google.gson.Strictness
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
@@ -107,9 +108,11 @@ open class GwtTestSpec(
         val rawMessage = logEntry.message
         val parts = logRegex.split(rawMessage, limit = 2)
         val logContentStr = parts.last()
-        val parsedData = gson.fromJson(logContentStr, Any::class.java)
-        if (parsedData != null) return parsedData
-        return logContentStr
+        return try {
+            gson.fromJson(logContentStr, Any::class.java) ?: logContentStr
+        } catch (_: JsonSyntaxException) {
+            logContentStr
+        }
     }
 
     /**

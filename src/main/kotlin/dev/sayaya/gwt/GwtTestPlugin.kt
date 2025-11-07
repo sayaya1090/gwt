@@ -125,9 +125,14 @@ class GwtTestPlugin : Plugin<Project> {
             dependsOn("gwtGenerateTestHtml")
 
             val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+            val mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
             val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
 
             extraSourceDirs.from(
+                mainSourceSet.allSource.sourceDirectories,
+                mainSourceSet.resources.sourceDirectories,
+                mainSourceSet.output,
+
                 testSourceSet.allSource.sourceDirectories,
                 testSourceSet.resources.sourceDirectories,
                 testSourceSet.output,
