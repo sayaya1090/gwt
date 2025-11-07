@@ -4,6 +4,7 @@ import dev.sayaya.gwt
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.docstr.gwt.GwtPluginExtension
@@ -43,6 +44,11 @@ class GwtTestPluginTest : DescribeSpec({
             val javaCompileTask = project.tasks.getByName("compileJava") as JavaCompile
             javaCompileTask.options.encoding shouldBe "UTF-8"
         }
+        it("'compileJava' 태스크는 'processTestResources' 태스크에 의존해야 한다") {
+            val task = project.tasks.getByName("compileJava")
+            val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
+            dependencyNames shouldContain "processTestResources"
+        }
 
         context("'gwtTestCompile' 태스크") {
             it("는 GwtTestCompileTask 타입으로 등록되어야 한다") {
@@ -55,27 +61,21 @@ class GwtTestPluginTest : DescribeSpec({
                 task.modules.get() shouldContain testModuleName
             }
         }
-
-        context("'test' 태스크") {
-            it("는 'gwtTest' 태스크에 의존해야 한다") {
-                val task = project.tasks.getByName("test")
+        context("'gwtDevMode' 태스크") {
+            it("는 'gwtGenerateTestHtml' 태스크에 의존해야 한다") {
+                val task = project.tasks.getByName("gwtDevMode")
                 val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
-                dependencyNames shouldContain "gwtTest"
+                dependencyNames shouldContain "gwtGenerateTestHtml"
             }
         }
-        context("'gwtTest' 태스크") {
+        context("'test' 태스크") {
             it("는 'openWebServer' 태스크에 의존해야 한다") {
-                val task = project.tasks.getByName("gwtTest")
+                val task = project.tasks.getByName("test")
                 val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
                 dependencyNames shouldContain "openWebServer"
             }
-            it("는 'gwtTestCompile' 태스크에 의존해야 한다") {
-                val task = project.tasks.getByName("gwtTest")
-                val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
-                dependencyNames shouldContain "gwtTestCompile"
-            }
             it("는 'closeWebServer' 태스크로 종료되어야 한다") {
-                val task = project.tasks.getByName("gwtTest")
+                val task = project.tasks.getByName("test")
                 val finalizerNames = task.finalizedBy.getDependencies(task).map { it.name }
                 finalizerNames shouldContain "closeWebServer"
             }

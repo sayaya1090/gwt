@@ -2,7 +2,10 @@ package dev.sayaya.gwt
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import kotlinx.coroutines.TimeoutCancellationException
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
@@ -13,11 +16,20 @@ import java.net.URI
 import kotlin.io.path.createTempDirectory
 
 class WebServerTaskTest : DescribeSpec({
+    lateinit var project: Project
+    beforeEach {
+        project = ProjectBuilder.builder().build()
+    }
     describe("WebServerTask") {
-        it("웹 서버를 시작하고 정적 파일을 올바르게 제공해야 한다") {
-            val project: Project = ProjectBuilder.builder().build()
-            val task = project.tasks.register("webServer", WebServerTask::class.java).get()
+        it("는 'gwtTestCompile' 태스크에 의존해야 한다") {
+            // 목 태스크 등록
+            project.tasks.register("gwtTestCompile")
 
+            val task = project.tasks.register("webServer", WebServerTask::class.java).get()
+            val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
+            dependencyNames shouldContain "gwtTestCompile"
+        }
+        it("웹 서버를 시작하고 정적 파일을 올바르게 제공해야 한다") {
             // 임시 디렉토리 및 테스트 파일 생성
             val tempDir = createTempDirectory("webserver-test").toFile()
             File(tempDir, "index.html").apply {
@@ -26,7 +38,7 @@ class WebServerTaskTest : DescribeSpec({
 
             // 사용 가능한 포트 동적 할당
             val port = ServerSocket(0).use { it.localPort }
-
+            val task = project.tasks.register("webServer", WebServerTask::class.java).get()
             // 태스크의 입력 프로퍼티 설정
             task.webserverPort.set(port)
             task.webserverPath.set(tempDir)
@@ -49,9 +61,7 @@ class WebServerTaskTest : DescribeSpec({
         }
 
         it("유효하지 않은 포트로 서버를 시작하면 예외를 던져야 한다") {
-            val project: Project = ProjectBuilder.builder().build()
             val task = project.tasks.register("webServer", WebServerTask::class.java).get()
-
             // 유효하지 않은 포트 (음수)
             task.webserverPort.set(-1)
             val tempDir = createTempDirectory("webserver-test").toFile()
@@ -70,8 +80,6 @@ class WebServerTaskTest : DescribeSpec({
             }
         }
         it("이미 사용 중인 포트로 서버를 시작하면 예외를 던져야 한다") {
-            val project: Project = ProjectBuilder.builder().build()
-
             // 포트를 먼저 점유
             val socket = ServerSocket(0)
             val occupiedPort = socket.localPort
@@ -109,7 +117,6 @@ class WebServerTaskTest : DescribeSpec({
         }
         context("isRunning()") {
             it("exec() 호출 전에는 false를 반환해야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 val port = ServerSocket(0).use { it.localPort }
@@ -120,7 +127,6 @@ class WebServerTaskTest : DescribeSpec({
                 task.isRunning() shouldBe false
             }
             it("서버가 성공적으로 시작되면 true를 반환해야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 val tempDir = createTempDirectory("webserver-test").toFile()
@@ -140,7 +146,6 @@ class WebServerTaskTest : DescribeSpec({
             }
 
             it("서버 시작 실패 시 false를 반환해야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 task.webserverPort.set(-1)
@@ -161,7 +166,6 @@ class WebServerTaskTest : DescribeSpec({
 
         context("close()") {
             it("실행 중인 서버를 정상적으로 종료해야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 val tempDir = createTempDirectory("webserver-test").toFile()
@@ -186,7 +190,6 @@ class WebServerTaskTest : DescribeSpec({
                 }
             }
             it("exec()를 호출하지 않은 상태에서 close()를 호출해도 예외가 발생하지 않아야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 val port = ServerSocket(0).use { it.localPort }
@@ -200,7 +203,6 @@ class WebServerTaskTest : DescribeSpec({
                 task.isRunning() shouldBe false
             }
             it("여러 번 호출해도 안전해야 한다") {
-                val project: Project = ProjectBuilder.builder().build()
                 val task = project.tasks.register("webServer", WebServerTask::class.java).get()
 
                 val tempDir = createTempDirectory("webserver-test").toFile()
@@ -221,6 +223,19 @@ class WebServerTaskTest : DescribeSpec({
                 } finally {
                     tempDir.deleteRecursively()
                 }
+            }
+        }
+
+        context("타임아웃 설정") {
+            it("startupTimeoutSeconds를 설정할 수 있어야 한다") {
+                val task = project.tasks.register("webServer", WebServerTask::class.java).get()
+
+                // 기본값 확인
+                task.startupTimeoutSeconds.get() shouldBe 30L
+
+                // 커스텀 값 설정
+                task.startupTimeoutSeconds.set(60L)
+                task.startupTimeoutSeconds.get() shouldBe 60L
             }
         }
     }

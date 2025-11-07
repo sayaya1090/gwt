@@ -5,9 +5,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -19,7 +19,6 @@ import java.io.File
 class GwtGenerateTestHtmlTaskTest : DescribeSpec({
     lateinit var project: Project
     lateinit var task: GwtGenerateTestHtmlTask
-    lateinit var gwtExtension: GwtPluginExtension
     lateinit var warDir: File
     lateinit var srcDir: File
 
@@ -27,8 +26,6 @@ class GwtGenerateTestHtmlTaskTest : DescribeSpec({
         project = ProjectBuilder.builder().withName("test-project").build()
         project.plugins.apply(JavaPlugin::class.java)
         project.plugins.apply(GwtTestPlugin::class.java)
-
-        gwtExtension = project.extensions.getByType(GwtPluginExtension::class.java)
 
         // 디렉토리 설정
         warDir = project.file("build/war")
@@ -467,7 +464,223 @@ class GwtGenerateTestHtmlTaskTest : DescribeSpec({
                 task.generateHtmlFiles()
 
                 // 검증 - war 디렉토리에 HTML 파일이 없어야 함
-                warDir.listFiles()?.filter { it.extension == "html" }?.isEmpty() shouldBe true
+                warDir.listFiles()?.none { it.extension == "html" } shouldBe true
+            }
+        }
+    }
+
+    describe("HTML 템플릿 커스터마이징") {
+        context("사용자 정의 템플릿이 제공된 경우") {
+            it("템플릿을 사용하여 HTML을 생성해야 한다") {
+                // 준비
+                val moduleName = "com.example.CustomTemplate"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="custom"></module>""")
+
+                // 사용자 정의 템플릿 생성
+                val templateFile = project.file("src/test/resources/custom-template.html")
+                templateFile.parentFile.mkdirs()
+                templateFile.writeText("""
+                    <!DOCTYPE html>
+                    <html lang="ko">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>{{MODULE_NAME}} Custom Title</title>
+                        <style>body { background: #f0f0f0; }</style>
+                        <script type="text/javascript" src="{{MODULE_NAME}}/{{MODULE_NAME}}.nocache.js"></script>
+                    </head>
+                    <body>
+                        <div id="app-container"></div>
+                    </body>
+                    </html>
+                """.trimIndent())
+
+                task.modules.set(listOf(moduleName))
+                task.htmlTemplate.set(templateFile)
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "custom.html")
+                htmlFile.exists().shouldBeTrue()
+                val content = htmlFile.readText()
+
+                content shouldContain """<html lang="ko">"""
+                content shouldContain """<meta charset="UTF-8">"""
+                content shouldContain """<title>custom Custom Title</title>"""
+                content shouldContain """<style>body { background: #f0f0f0; }</style>"""
+                content shouldContain """<div id="app-container"></div>"""
+                content shouldContain """<script type="text/javascript" src="custom/custom.nocache.js"></script>"""
+
+                // 정리
+                templateFile.parentFile.deleteRecursively()
+            }
+
+            it("템플릿의 모든 {{MODULE_NAME}} 플레이스홀더를 치환해야 한다") {
+                // 준비
+                val moduleName = "com.example.MultiPlaceholder"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="multi"></module>""")
+
+                val templateFile = project.file("src/test/resources/multi-placeholder.html")
+                templateFile.parentFile.mkdirs()
+                templateFile.writeText("""
+                    <html>
+                    <head>
+                        <title>{{MODULE_NAME}} Test</title>
+                        <script src="{{MODULE_NAME}}/{{MODULE_NAME}}.nocache.js"></script>
+                    </head>
+                    <body data-module="{{MODULE_NAME}}"></body>
+                    </html>
+                """.trimIndent())
+
+                task.modules.set(listOf(moduleName))
+                task.htmlTemplate.set(templateFile)
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "multi.html")
+                val content = htmlFile.readText()
+
+                content shouldContain """<title>multi Test</title>"""
+                content shouldContain """<script src="multi/multi.nocache.js"></script>"""
+                content shouldContain """<body data-module="multi">"""
+                content.shouldNotContain("{{MODULE_NAME}}")
+
+                // 정리
+                templateFile.parentFile.deleteRecursively()
+            }
+        }
+
+        context("titleSuffix가 커스터마이징된 경우") {
+            it("커스텀 접미사를 사용해야 한다") {
+                // 준비
+                val moduleName = "com.example.CustomSuffix"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="suffix"></module>""")
+
+                task.modules.set(listOf(moduleName))
+                task.titleSuffix.set("Demo")
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "suffix.html")
+                val content = htmlFile.readText()
+
+                content shouldContain """<title>suffix Demo</title>"""
+                content.shouldNotContain("Test")
+            }
+
+            it("빈 접미사를 설정할 수 있어야 한다") {
+                // 준비
+                val moduleName = "com.example.NoSuffix"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="nosuffix"></module>""")
+
+                task.modules.set(listOf(moduleName))
+                task.titleSuffix.set("")
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "nosuffix.html")
+                val content = htmlFile.readText()
+
+                content shouldContain """<title>nosuffix </title>"""
+            }
+        }
+
+        context("템플릿과 titleSuffix가 모두 설정된 경우") {
+            it("템플릿이 우선순위를 가져야 한다 (titleSuffix 무시)") {
+                // 준비
+                val moduleName = "com.example.TemplatePriority"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="priority"></module>""")
+
+                val templateFile = project.file("src/test/resources/priority-template.html")
+                templateFile.parentFile.mkdirs()
+                templateFile.writeText("""
+                    <html>
+                    <head><title>{{MODULE_NAME}} From Template</title></head>
+                    <body></body>
+                    </html>
+                """.trimIndent())
+
+                task.modules.set(listOf(moduleName))
+                task.htmlTemplate.set(templateFile)
+                task.titleSuffix.set("Should Be Ignored")
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "priority.html")
+                val content = htmlFile.readText()
+
+                content shouldContain """<title>priority From Template</title>"""
+                content.shouldNotContain("Should Be Ignored")
+
+                // 정리
+                templateFile.parentFile.deleteRecursively()
+            }
+        }
+
+        context("템플릿 파일이 존재하지 않는 경우") {
+            it("예외를 던져야 한다") {
+                // 준비
+                val moduleName = "com.example.MissingTemplate"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("<module></module>")
+
+                val nonExistentTemplate = project.file("src/test/resources/non-existent.html")
+                task.modules.set(listOf(moduleName))
+                task.htmlTemplate.set(nonExistentTemplate)
+
+                // 실행 및 검증
+                shouldThrow<Exception> {
+                    task.generateHtmlFiles()
+                }
+            }
+        }
+
+        context("기본 설정 (템플릿 없음)") {
+            it("titleSuffix 기본값 'Test'를 사용해야 한다") {
+                // 준비
+                val moduleName = "com.example.DefaultBehavior"
+                val modulePath = moduleName.replace('.', '/')
+                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
+                xmlFile.parentFile.mkdirs()
+                xmlFile.writeText("""<module rename-to="default"></module>""")
+
+                task.modules.set(listOf(moduleName))
+                // htmlTemplate과 titleSuffix 설정하지 않음 (기본값 사용)
+
+                // 실행
+                task.generateHtmlFiles()
+
+                // 검증
+                val htmlFile = File(warDir, "default.html")
+                val content = htmlFile.readText()
+
+                content shouldContain """<title>default Test</title>"""
             }
         }
     }

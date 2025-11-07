@@ -113,6 +113,31 @@ open class GwtTestSpec(
     }
 
     /**
+     * 브라우저 콘솔 로그 검증 공통 메서드
+     *
+     * @param value 검증할 로그 값
+     * @param shouldContain true면 포함되어야 하고, false면 포함되지 않아야 함
+     * @throws AssertionError 검증 실패 시
+     */
+    private fun ChromeDriver.checkLog(value: Any, shouldContain: Boolean) {
+        val logs = this.manage().logs().get(LogType.BROWSER)
+        val parsedLogs = logs.map(::parseMessage)
+        val found = parsedLogs.any { it == value }
+
+        val expectedCondition = if (shouldContain) "contain" else "NOT to contain"
+        val actualCondition = if (found) "found" else "not found"
+
+        withClue({
+            "Expected log to $expectedCondition:\n" +
+                    "  '$value'\n" +
+                    "But it was $actualCondition. Actual logs were:\n" +
+                    parsedLogs.joinToString("\n") { "  - $it" }
+        }) {
+            found shouldBe shouldContain
+        }
+    }
+
+    /**
      * 브라우저 콘솔 로그에 특정 값이 포함되어 있는지 검증합니다.
      * 검증 후 콘솔 로그를 자동으로 클리어합니다.
      *
@@ -120,16 +145,7 @@ open class GwtTestSpec(
      * @throws AssertionError 로그에 해당 값이 없으면 예외 발생
      */
     infix fun ChromeDriver.shouldContainLog(expected: Any) {
-        val logs = this.manage().logs().get(LogType.BROWSER)
-        val found = logs.asSequence().map(::parseMessage).any { it == expected }
-        withClue({
-            "Expected log to contain:\n" +
-                    "  '$expected'\n" +
-                    "But it was not found. Actual logs were:\n" +
-                    logs.map(::parseMessage).joinToString("\n") { "  - $it" }
-        }) {
-            found shouldBe true
-        }
+        checkLog(expected, shouldContain = true)
     }
 
     /**
@@ -140,16 +156,7 @@ open class GwtTestSpec(
      * @throws AssertionError 로그에 해당 값이 있으면 예외 발생
      */
     infix fun ChromeDriver.shouldNotContainLog(unexpected: Any) {
-        val logs = this.manage().logs().get(LogType.BROWSER)
-        val found = logs.asSequence().map(::parseMessage).any { it == unexpected }
-        withClue({
-            "Expected log NOT to contain:\n" +
-                    "  '$unexpected'\n" +
-                    "But it was found. Actual logs were:\n" +
-                    logs.map(::parseMessage).joinToString("\n") { "  - $it" }
-        }) {
-            found shouldBe false
-        }
+        checkLog(unexpected, shouldContain = false)
     }
 
     /**

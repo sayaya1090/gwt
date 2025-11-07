@@ -4,8 +4,12 @@ package dev.sayaya.gwt
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
@@ -66,9 +70,33 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     @get:OutputDirectory
     abstract val war: DirectoryProperty
 
+    /**
+     * 사용자 정의 HTML 템플릿 파일 경로 (선택사항)
+     *
+     * 템플릿 파일에서 사용 가능한 플레이스홀더:
+     * - `{{MODULE_NAME}}`: 모듈 이름으로 치환
+     *
+     * 템플릿이 지정되지 않으면 기본 템플릿을 사용합니다.
+     */
+    @get:InputFile
+    @get:Optional
+    abstract val htmlTemplate: RegularFileProperty
+
+    /**
+     * HTML 파일의 title 태그에 사용할 접미사
+     *
+     * 기본값: "Test"
+     *
+     * 예: moduleName이 "app"이고 titleSuffix가 "Test"이면
+     * `<title>app Test</title>`로 생성됩니다.
+     */
+    @get:Input
+    abstract val titleSuffix: Property<String>
+
     init {
         group = "GWT"
         description = "Generates HTML host files for GWT test modules"
+        titleSuffix.convention("Test")
     }
 
     /**
@@ -173,20 +201,29 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     /**
      * GWT 테스트용 HTML 콘텐츠를 생성합니다.
      *
-     * 생성되는 HTML은 GWT 컴파일러가 생성한 JavaScript를 로드하는
-     * 최소한의 구조를 가집니다.
+     * 사용자 정의 템플릿이 제공되면 해당 템플릿을 사용하고,
+     * 없으면 기본 템플릿을 사용합니다.
      *
      * @param moduleName 모듈 이름 (제목과 스크립트 경로에 사용됨)
      * @return HTML 콘텐츠 문자열
      */
-    private fun createHtmlContent(moduleName: String): String = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>$moduleName Test</title>
-            <script type="text/javascript" src="$moduleName/$moduleName.nocache.js"></script>
-        </head>
-        <body></body>
-        </html>
-    """.trimIndent()
+    private fun createHtmlContent(moduleName: String): String {
+        // 사용자 정의 템플릿이 있으면 사용
+        if (htmlTemplate.isPresent) {
+            val templateContent = htmlTemplate.get().asFile.readText()
+            return templateContent.replace("{{MODULE_NAME}}", moduleName)
+        }
+
+        // 기본 템플릿 사용
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>$moduleName ${titleSuffix.get()}</title>
+                <script type="text/javascript" src="$moduleName/$moduleName.nocache.js"></script>
+            </head>
+            <body></body>
+            </html>
+        """.trimIndent()
+    }
 }

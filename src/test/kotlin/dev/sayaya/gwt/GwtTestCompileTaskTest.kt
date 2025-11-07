@@ -1,25 +1,16 @@
 package dev.sayaya.gwt
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import org.docstr.gwt.GwtPluginExtension
-import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testfixtures.ProjectBuilder
-import java.io.File
 
 class GwtTestCompileTaskTest : DescribeSpec({
     lateinit var project: Project
     lateinit var gwtExtension: GwtPluginExtension
-    lateinit var baseExtraDir: File
-    lateinit var devModeExtraDir: File
 
 
     beforeEach {
@@ -29,52 +20,12 @@ class GwtTestCompileTaskTest : DescribeSpec({
 
         // `modules`가 비어있으면 예외가 발생하므로, 모든 테스트에서 기본값을 설정합니다.
         gwtExtension.modules.set(listOf("com.example.Dummy"))
-
-        // 테스트에 사용할 가상 디렉토리를 생성합니다.
-        baseExtraDir = project.file("src/base/extra")
-        devModeExtraDir = project.file("src/dev/extra")
     }
-
-    describe("GwtTestCompileTask의 extraSourceDirs 프로퍼티 설정") {
-        context("gwt.devMode.extraSourceDirs와 gwt.extraSourceDirs가 모두 설정된 경우") {
-            it("devMode의 extraSourceDirs를 우선적으로 사용해야 한다") {
-                // 준비 (Arrange)
-                gwtExtension.extraSourceDirs.from(baseExtraDir)
-                gwtExtension.devMode.extraSourceDirs.from(devModeExtraDir)
-
-                // 실행 (Act)
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-
-                // 검증 (Assert)
-                task.extraSourceDirs.files shouldContainExactly setOf(devModeExtraDir)
-            }
-        }
-
-        context("gwt.extraSourceDirs만 설정된 경우") {
-            it("base의 extraSourceDirs를 사용해야 한다") {
-                // 준비 (Arrange)
-                gwtExtension.extraSourceDirs.from(baseExtraDir)
-                // gwt.devMode.extraSourceDirs는 설정하지 않음
-
-                // 실행 (Act)
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-
-                // 검증 (Assert)
-                task.extraSourceDirs.files shouldContainExactly setOf(baseExtraDir)
-            }
-        }
-
-        context("gwt.devMode.extraSourceDirs와 gwt.extraSourceDirs가 모두 설정되지 않은 경우") {
-            it("extraSourceDirs는 비어있어야 한다") {
-                // 준비 (Arrange)
-                // 아무것도 설정하지 않음
-
-                // 실행 (Act)
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-
-                // 검증 (Assert)
-                task.extraSourceDirs.files.shouldBeEmpty()
-            }
+    describe("TestCompileTask") {
+        it("는 'gwtGenerateHtmlTask' 태스크에 의존해야 한다") {
+            val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
+            val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
+            dependencyNames shouldContain "gwtGenerateTestHtml"
         }
     }
     describe("GwtTestCompileTask의 sourceLevel 프로퍼티 설정") {
@@ -119,134 +70,236 @@ class GwtTestCompileTaskTest : DescribeSpec({
             }
         }
     }
-    /*describe("ensureTestHtmlFileForModule (HTML 파일 생성)") {
-        lateinit var warDir: File
-        lateinit var srcDir: File
+    describe("GwtDevPluginExtension 프록시 클래스") {
+        lateinit var proxy: GwtTestCompileTask.Companion.GwtDevPluginExtension
 
         beforeEach {
-            // 이 테스트 그룹을 위한 디렉토리 설정
-            warDir = project.file("build/war")
-            srcDir = project.file("src/main/java")
-            srcDir.mkdirs()
-            gwtExtension.war.set(warDir)
-
-            // 소스셋이 srcDir을 인식하도록 설정
-            val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
-            sourceSets.getByName("main").java.srcDir(srcDir)
+            proxy = GwtTestCompileTask.Companion.GwtDevPluginExtension(gwtExtension)
         }
 
-        context("HTML 파일이 존재하지 않을 때") {
-            it("모듈 이름으로 HTML 파일을 생성해야 한다") {
-                // 준비
-                val moduleName = "com.example.App"
-                val modulePath = moduleName.replace('.', '/')
-                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
-                xmlFile.parentFile.mkdirs()
-                xmlFile.writeText("<module><inherits name='com.google.gwt.user.User'/></module>")
-
-                gwtExtension.modules.set(listOf(moduleName))
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-                val expectedHtmlFile = File(warDir, "com.example.App.html")
-                expectedHtmlFile.exists().shouldBeFalse()
-
-                // 실행
-                task.exec()
-
-                // 검증
-                expectedHtmlFile.exists().shouldBeTrue()
-                val content = expectedHtmlFile.readText()
-                content shouldContain "<title>com.example.App Test</title>"
-                content shouldContain """<script type="text/javascript" src="com.example.App/com.example.App.nocache.js"></script>"""
+        context("기본 위임 프로퍼티") {
+            it("gwtVersion은 extension의 gwtVersion을 그대로 반환한다") {
+                gwtExtension.gwtVersion.set("2.11.0")
+                proxy.gwtVersion.get() shouldBe "2.11.0"
             }
 
-            it("'rename-to' 속성 값으로 HTML 파일을 생성해야 한다") {
-                // 준비
-                val moduleName = "com.example.App"
-                val renamedModule = "RenamedApp"
-                val modulePath = moduleName.replace('.', '/')
-                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
-                xmlFile.parentFile.mkdirs()
-                xmlFile.writeText("<module rename-to='$renamedModule'><inherits name='com.google.gwt.user.User'/></module>")
+            it("jakarta는 extension의 jakarta를 그대로 반환한다") {
+                gwtExtension.jakarta.set(true)
+                proxy.jakarta.get() shouldBe true
 
-                gwtExtension.modules.set(listOf(moduleName))
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-                val expectedHtmlFile = File(warDir, "$renamedModule.html")
-                expectedHtmlFile.exists().shouldBeFalse()
+                gwtExtension.jakarta.set(false)
+                proxy.jakarta.get() shouldBe false
+            }
 
-                // 실행
-                task.exec()
+            it("compiler는 extension의 compiler를 그대로 반환한다") {
+                proxy.compiler shouldBe gwtExtension.compiler
+            }
 
-                // 검증
-                expectedHtmlFile.exists().shouldBeTrue()
-                val content = expectedHtmlFile.readText()
-                content shouldContain "<title>$renamedModule Test</title>"
-                content shouldContain """<script type="text/javascript" src="$renamedModule/$renamedModule.nocache.js"></script>"""
+            it("devMode는 extension의 devMode를 그대로 반환한다") {
+                proxy.devMode shouldBe gwtExtension.devMode
+            }
+
+            it("gwtTest는 extension의 gwtTest를 그대로 반환한다") {
+                proxy.gwtTest shouldBe gwtExtension.gwtTest
+            }
+
+            it("superDev는 extension의 superDev를 그대로 반환한다") {
+                proxy.superDev shouldBe gwtExtension.superDev
             }
         }
 
-        context("HTML 파일이 이미 존재할 때") {
-            it("기존 파일을 덮어쓰지 않아야 한다") {
-                // 준비
-                val moduleName = "com.example.App"
-                val modulePath = moduleName.replace('.', '/')
-                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
-                xmlFile.parentFile.mkdirs()
-                xmlFile.writeText("<module><inherits name='com.google.gwt.user.User'/></module>")
+        context("Property<String> 타입 - devMode 우선 적용") {
+            it("minHeapSize는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.minHeapSize.set("1g")
+                proxy.minHeapSize.get() shouldBe "1g"
 
-                gwtExtension.modules.set(listOf(moduleName))
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
-                val existingHtmlFile = File(warDir, "com.example.App.html")
-                existingHtmlFile.parentFile.mkdirs()
-                val originalContent = "<!-- This is a pre-existing file -->"
-                existingHtmlFile.writeText(originalContent)
+                gwtExtension.devMode.minHeapSize.set("2g")
+                proxy.minHeapSize.get() shouldBe "2g"
+            }
 
-                // 실행
-                task.exec()
+            it("maxHeapSize는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.maxHeapSize.set("2g")
+                proxy.maxHeapSize.get() shouldBe "2g"
 
-                // 검증
-                existingHtmlFile.readText() shouldBe originalContent
+                gwtExtension.devMode.maxHeapSize.set("4g")
+                proxy.maxHeapSize.get() shouldBe "4g"
+            }
+
+            it("logLevel은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.logLevel.set("INFO")
+                proxy.logLevel.get() shouldBe "INFO"
+
+                gwtExtension.devMode.logLevel.set("DEBUG")
+                proxy.logLevel.get() shouldBe "DEBUG"
+            }
+
+            it("methodNameDisplayMode는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.methodNameDisplayMode.set("NONE")
+                proxy.methodNameDisplayMode.get() shouldBe "NONE"
+
+                gwtExtension.devMode.methodNameDisplayMode.set("FULL")
+                proxy.methodNameDisplayMode.get() shouldBe "FULL"
+            }
+
+            it("sourceLevel은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.sourceLevel.set("8")
+                proxy.sourceLevel.get() shouldBe "8"
+
+                gwtExtension.devMode.sourceLevel.set("11")
+                proxy.sourceLevel.get() shouldBe "11"
+            }
+
+            it("style은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.style.set("OBF")
+                proxy.style.get() shouldBe "OBF"
+
+                gwtExtension.devMode.style.set("PRETTY")
+                proxy.style.get() shouldBe "PRETTY"
             }
         }
-        context("파일 생성 중 IO 오류가 발생할 때") {
-            it("GradleException을 던져야 한다") {
-                // 준비
-                val moduleName = "com.example.App"
-                val modulePath = moduleName.replace('.', '/')
-                val xmlFile = File(srcDir, "$modulePath.gwt.xml")
-                xmlFile.parentFile.mkdirs()
-                xmlFile.writeText("<module />")
 
-                gwtExtension.modules.set(listOf(moduleName))
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
+        context("Property<Boolean> 타입 - devMode 우선 적용") {
+            it("generateJsInteropExports는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.generateJsInteropExports.set(false)
+                proxy.generateJsInteropExports.get() shouldBe false
 
-                // warDir을 읽기 전용으로 만들어 IO 예외를 유도
-                warDir.mkdirs()
-                warDir.setReadOnly()
+                gwtExtension.devMode.generateJsInteropExports.set(true)
+                proxy.generateJsInteropExports.get() shouldBe true
+            }
 
-                try {
-                    // 실행 및 검증
-                    val exception = shouldThrow<GradleException> {
-                        task.exec()
-                    }
-                    exception.message shouldContain "HTML 파일 생성 중 오류가 발생했습니다"
-                } finally {
-                    // 정리: 테스트 후 디렉터리를 삭제할 수 있도록 쓰기 권한을 복원
-                    warDir.setWritable(true)
-                }
+            it("incremental은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.incremental.set(false)
+                proxy.incremental.get() shouldBe false
+
+                gwtExtension.devMode.incremental.set(true)
+                proxy.incremental.get() shouldBe true
+            }
+
+            it("failOnError는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.failOnError.set(false)
+                proxy.failOnError.get() shouldBe false
+
+                gwtExtension.devMode.failOnError.set(true)
+                proxy.failOnError.get() shouldBe true
             }
         }
-        context("gwt.xml 파일이 없을 때") {
-            it("GradleException을 던져야 한다") {
-                // 준비
-                gwtExtension.modules.set(listOf("com.example.NonExistent"))
-                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
 
-                // 실행 및 검증
-                val exception = shouldThrow<GradleException> {
-                    task.exec()
-                }
-                exception.message shouldBe "XML 파일을 찾을 수 없습니다: com/example/NonExistent.gwt.xml"
+        context("DirectoryProperty 타입 - devMode 우선 적용") {
+            it("workDir은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseWork")
+                val devDir = project.layout.projectDirectory.dir("devWork")
+
+                gwtExtension.workDir.set(baseDir)
+                proxy.workDir.get() shouldBe baseDir
+
+                gwtExtension.devMode.workDir.set(devDir)
+                proxy.workDir.get() shouldBe devDir
+            }
+
+            it("gen은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseGen")
+                val devDir = project.layout.projectDirectory.dir("devGen")
+
+                gwtExtension.gen.set(baseDir)
+                proxy.gen.get() shouldBe baseDir
+
+                gwtExtension.devMode.gen.set(devDir)
+                proxy.gen.get() shouldBe devDir
+            }
+
+            it("war은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseWar")
+                val devDir = project.layout.projectDirectory.dir("devWar")
+
+                gwtExtension.war.set(baseDir)
+                proxy.war.get() shouldBe baseDir
+
+                gwtExtension.devMode.war.set(devDir)
+                proxy.war.get() shouldBe devDir
+            }
+
+            it("deploy은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseDeploy")
+                val devDir = project.layout.projectDirectory.dir("devDeploy")
+
+                gwtExtension.deploy.set(baseDir)
+                proxy.deploy.get() shouldBe baseDir
+
+                gwtExtension.devMode.deploy.set(devDir)
+                proxy.deploy.get() shouldBe devDir
+            }
+
+            it("extra은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseExtra")
+                val devDir = project.layout.projectDirectory.dir("devExtra")
+
+                gwtExtension.extra.set(baseDir)
+                proxy.extra.get() shouldBe baseDir
+
+                gwtExtension.devMode.extra.set(devDir)
+                proxy.extra.get() shouldBe devDir
+            }
+
+            it("cacheDir은 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseDir = project.layout.projectDirectory.dir("baseCache")
+                val devDir = project.layout.projectDirectory.dir("devCache")
+
+                gwtExtension.cacheDir.set(baseDir)
+                proxy.cacheDir.get() shouldBe baseDir
+
+                gwtExtension.devMode.cacheDir.set(devDir)
+                proxy.cacheDir.get() shouldBe devDir
             }
         }
-    }*/
+
+        context("ListProperty<String> 타입 - devMode 우선 적용") {
+            it("includeJsInteropExports는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.includeJsInteropExports.set(listOf("A"))
+                proxy.includeJsInteropExports.get() shouldBe listOf("A")
+
+                gwtExtension.devMode.includeJsInteropExports.set(listOf("B"))
+                proxy.includeJsInteropExports.get() shouldBe listOf("B")
+            }
+
+            it("excludeJsInteropExports는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.excludeJsInteropExports.set(listOf("C"))
+                proxy.excludeJsInteropExports.get() shouldBe listOf("C")
+
+                gwtExtension.devMode.excludeJsInteropExports.set(listOf("D"))
+                proxy.excludeJsInteropExports.get() shouldBe listOf("D")
+            }
+
+            it("setProperty는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.setProperty.set(listOf("foo=bar"))
+                proxy.setProperty.get() shouldBe listOf("foo=bar")
+
+                gwtExtension.devMode.setProperty.set(listOf("a=b"))
+                proxy.setProperty.get() shouldBe listOf("a=b")
+            }
+
+            it("modules는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                gwtExtension.modules.set(listOf("com.example.Base"))
+                proxy.modules.get() shouldBe listOf("com.example.Base")
+
+                gwtExtension.devMode.modules.set(listOf("com.example.Test"))
+                proxy.modules.get() shouldBe listOf("com.example.Test")
+            }
+        }
+
+        context("ConfigurableFileCollection 타입 - devMode 우선 적용") {
+            it("extraSourceDirs는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+                val baseFile = project.file("base.txt")
+                baseFile.writeText("base")
+                val baseFiles = project.files(baseFile)
+                gwtExtension.extraSourceDirs.from(baseFiles)
+                proxy.extraSourceDirs.files.shouldContain(baseFile)
+
+                val devFile = project.file("dev.txt")
+                devFile.writeText("dev")
+                val devFiles = project.files(devFile)
+                gwtExtension.devMode.extraSourceDirs.from(devFiles)
+                proxy.extraSourceDirs.files.shouldContain(devFile)
+            }
+        }
+    }
 })

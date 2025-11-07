@@ -65,7 +65,7 @@ gwt {
 
 tasks.withType<Test> {
     extensions.configure<GwtTestTaskExtension>("gwt") {
-        webPort.set(9876) // 웹서버 포트 (기본값: 9876)
+        webPort.set(8080) // 웹서버 포트 (기본값: 8080)
     }
 }
 ```
@@ -134,7 +134,7 @@ gwt {
 
 tasks.test {
     extensions.configure<GwtTestTaskExtension>("gwt") {
-        webPort.set(9876)
+        webPort.set(8080)
     }
 }
 ```
@@ -349,21 +349,24 @@ dev.sayaya.gwt (GwtPlugin)
 
 ```
 test
-├── dependsOn: gwtTest
-│   ├── dependsOn: gwtTestCompile
-│   │   └── dependsOn: processTestResources
-│   ├── dependsOn: openWebServer
-│   └── finalizedBy: closeWebServer
+├── dependsOn: openWebServer
+│   └── dependsOn: gwtTestCompile
+│       └── dependsOn: gwtGenerateTestHtml
+└── finalizedBy: closeWebServer
+
+gwtDevMode
+└── dependsOn: gwtGenerateTestHtml
 
 war
 └── dependsOn: test
 ```
 
 **태스크 설명:**
-- `gwtTestCompile`: GWT 테스트 모듈 컴파일 및 HTML 파일 생성
+- `gwtGenerateTestHtml`: GWT 테스트 모듈용 HTML 호스트 파일 자동 생성
+- `gwtTestCompile`: GWT 테스트 모듈 컴파일 (main + test 소스 포함)
 - `openWebServer`: Ktor 기반 정적 파일 웹서버 시작
 - `closeWebServer`: 웹서버 종료
-- `gwtTest`: 웹서버 시작, 테스트 컴파일, 종료를 통합한 태스크
+- `gwtDevMode`: 테스트 소스를 포함한 GWT 개발 모드 실행
 
 ## 문제 해결
 
@@ -415,15 +418,15 @@ gwt {
 
 ### 웹서버 포트 변경
 
-**기본 포트:** 9876
+**기본 포트:** 8080
 
 **변경 방법:**
 ```kotlin
 
 tasks.test {
     gwt {
-        webPort.set(8080) // 원하는 포트로 변경
-        codePort.set(8081)
+        webPort.set(9876) // 원하는 포트로 변경
+        codePort.set(9877)
     }
 }
 ```

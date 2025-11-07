@@ -1,6 +1,7 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
+    kotlin("jvm") version "2.2.21"
     id("maven-publish")
     id("org.jetbrains.kotlinx.kover") version "0.9.2"
 }

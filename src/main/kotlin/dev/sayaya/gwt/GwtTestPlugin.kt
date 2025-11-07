@@ -1,155 +1,176 @@
+
 package dev.sayaya.gwt
 
-import org.docstr.gwt.GwtDevModeConfig
-import org.gradle.api.Plugin
-import org.gradle.api.Project
+import org.docstr.gwt.GwtDevModeTask
 import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Action
-import org.gradle.api.Task
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
-import org.gradle.kotlin.dsl.exclude
 
 /**
- * GWT 테스트 컴파일 및 개발 모드를 설정하는 플러그인
+ * GWT 테스트 컴파일 및 개발 모드를 설정하는 플러그인입니다.
  *
- * 이 플러그인은 다음을 수행합니다:
+ * ## 주요 기능
  * - 기본 `org.docstr.gwt` 플러그인 적용
- * - GWT 테스트 모듈 컴파일을 위한 `gwtTestCompile` 태스크 등록
- * - 테스트 소스를 포함하도록 `gwtDevMode` 설정
- * - 태스크 의존성 설정 (test는 gwtTestCompile에 의존, war는 gwtCompile에 의존)
- * - Java 컴파일에 UTF-8 인코딩 설정
+ * - GWT 테스트 모듈 컴파일을 위한 태스크 등록
+ * - 테스트 소스를 포함하도록 개발 모드 설정
+ * - 웹 서버 자동 시작/종료
+ * - Java 컴파일 UTF-8 인코딩 설정
  *
- * ## 동작 방식
- * 1. `gwtTest` 실행 시 웹서버 → 코드서버 순서로 시작
- * 2. `test` 실행 시 웹서버 시작 → 코드서버 구동 확인 → 테스트 실행
- * 3. 태스크 종료 시 자동으로 웹서버와 코드서버 종료
+ * ## 태스크 실행 흐름
+ * ```
+ * test
+ * ├── dependsOn: openWebServer
+ * ├── dependsOn: gwtTestCompile
+ * │   └── dependsOn: gwtGenerateTestHtml
+ * └── finalizedBy: closeWebServer
+ *
+ * gwtDevMode
+ * └── dependsOn: gwtGenerateTestHtml
+ * ```
+ *
+ * @see GwtTestCompileTask
+ * @see GwtGenerateTestHtmlTask
  */
 class GwtTestPlugin : Plugin<Project> {
+
     override fun apply(project: Project) {
-        // 1. 필수 플러그인 적용 및 기본 설정
-        project.plugins.apply("java")
-        project.plugins.apply("org.docstr.gwt")
-        project.configurations.all {
-            exclude(group = "jakarta.servlet", module = "jakarta.servlet-api")
-        }
+        applyRequiredPlugins(project)
 
-        // 2. 태스크 등록
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-        val configureClasspathTask = registerConfigureClasspathTask(project)
-        val gwtCompileTask = project.tasks.named("gwtCompile")
-        val gwtDevModeTask = project.tasks.named("gwtDevMode")
-        val processTestResourcesTask = project.tasks.named("processTestResources")
-        val gwtTestCompileTask = project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java, GwtTestCompileConfig(extension))
-        val openWebserverTask = registerOpenWebserverTask(project, extension)
-        val closeWebserverTask = registerCloseWebserver(project, openWebserverTask)
-        val gwtTestTask = registerGwtTest(project)
-        val gwtGenerateHtmlTask = generateHtmlTask(project)
-        gwtGenerateHtmlTask.configure {
-            dependsOn(processTestResourcesTask)
-        }
-        gwtTestCompileTask.configure {
-            dependsOn(configureClasspathTask)
-            dependsOn(gwtGenerateHtmlTask)
-        }
-        gwtDevModeTask.configure {
-            dependsOn(configureClasspathTask)
-            dependsOn(gwtGenerateHtmlTask)
-        }
 
-        // 3. 태스크 설정 및 의존성 연결
+        registerGenerateHtmlTask(project, extension)
+        registerGwtTestCompileTask(project)
+        registerWebServerTasks(project, extension)
+
+        configureGwtDevMode(project)
         configureJavaCompile(project)
-        configureGwtTestTask(project, openWebserverTask)
-        configureTestTasks(project, gwtTestTask)
+        configureTestTasks(project)
         configureWarTask(project)
     }
 
     /**
-     * 클래스패스 설정 태스크 등록
+     * 필수 플러그인을 적용하고 기본 설정을 수행합니다.
      */
-    private fun registerConfigureClasspathTask(project: Project): TaskProvider<GwtConfigureTestClasspathTask> =
-        project.tasks.register("gwtConfigureTestClasspath", GwtConfigureTestClasspathTask::class.java)
+    private fun applyRequiredPlugins(project: Project) {
+        project.plugins.apply("java")
+        project.plugins.apply("org.docstr.gwt")
 
+        // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
+        project.excludeJakartaServletApi()
+    }
 
     /**
-     * GWT 테스트 태스크 등록 (코드서버)
+     * HTML 호스트 파일 생성 태스크를 등록합니다.
      */
-    private fun registerGwtTest(project: Project): TaskProvider<GwtTestTask> =
-        project.tasks.register("gwtTest", GwtTestTask::class.java)
-
-    // HTML 생성 태스크 등록
-    private fun generateHtmlTask(project: Project): TaskProvider<GwtGenerateTestHtmlTask> =
+    private fun registerGenerateHtmlTask(
+        project: Project,
+        extension: GwtPluginExtension
+    ): TaskProvider<GwtGenerateTestHtmlTask> =
         project.tasks.register("gwtGenerateTestHtml", GwtGenerateTestHtmlTask::class.java, Action<GwtGenerateTestHtmlTask> {
-            val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-            this.modules.set(extension.devMode.modules.orElse(extension.modules))
-            this.war.set(extension.devMode.war.orElse(extension.war))
+            modules.set(extension.devMode.modules.orElse(extension.modules))
+            war.set(extension.devMode.war.orElse(extension.war))
         })
 
     /**
-     * WebServerTask를 등록하고 기본 설정을 수행합니다.
-     * - 'openWebServer' 태스크의 포트를 'test' 태스크의 'gwt' 확장('webPort')에 연결합니다.
+     * GWT 테스트 컴파일 태스크를 등록합니다.
      */
-    private fun registerOpenWebserverTask(project: Project, gwtExtension: GwtPluginExtension): TaskProvider<WebServerTask> {
-        val task = project.tasks.register("openWebServer", WebServerTask::class.java) {
-            webserverPath.set(gwtExtension.war.map { it.asFile })
-        }
+    private fun registerGwtTestCompileTask(project: Project): TaskProvider<GwtTestCompileTask> =
+        project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java)
+
+    /**
+     * 웹 서버 시작/종료 태스크를 등록하고 구성합니다.
+     */
+    private fun registerWebServerTasks(project: Project, extension: GwtPluginExtension) {
+        // Test 태스크에 gwt 확장 추가
         project.tasks.withType(Test::class.java).configureEach {
             extensions.create("gwt", GwtTestTaskExtension::class.java)
         }
-        task.configure {
+
+        // 웹 서버 시작 태스크
+        val openWebServerTask = project.tasks.register("openWebServer", WebServerTask::class.java) {
+            webserverPath.set(extension.war.map { it.asFile })
+
+            // Test 태스크의 webPort 설정과 연결
             val testTaskProvider = project.tasks.named("test", Test::class.java)
             val webPortProvider = testTaskProvider.flatMap { testTask ->
                 testTask.extensions.getByType(GwtTestTaskExtension::class.java).webPort
             }
             webserverPort.set(webPortProvider)
         }
-        return task
-    }
 
-    /**
-     * 웹서버를 종료하는 태스크 등록
-     */
-    private fun registerCloseWebserver(project: Project, openWebserver: TaskProvider<WebServerTask>): TaskProvider<Task> =
+        // 웹 서버 종료 태스크
         project.tasks.register("closeWebServer") {
             doLast {
-                openWebserver.get().close()
+                openWebServerTask.get().close()
             }
         }
+    }
 
     /**
-     * 모든 JavaCompile 태스크에 UTF-8 인코딩을 설정합니다.
+     * GWT 개발 모드 태스크를 구성합니다.
+     *
+     * 테스트 소스와 리소스를 extraSourceDirs에 추가하여
+     * 개발 모드에서도 테스트 코드를 사용할 수 있도록 설정합니다.
+     *
+     * **중요:** extension을 직접 수정하지 않고 태스크의 extraSourceDirs만 수정합니다.
+     */
+    private fun configureGwtDevMode(project: Project) {
+        project.tasks.named("gwtDevMode", GwtDevModeTask::class.java).configure {
+            dependsOn("gwtGenerateTestHtml")
+
+            val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
+            val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
+
+            extraSourceDirs.from(
+                testSourceSet.allSource.sourceDirectories,
+                testSourceSet.resources.sourceDirectories,
+                testSourceSet.output,
+                testSourceSet.runtimeClasspath
+            )
+        }
+    }
+
+    /**
+     * Java 컴파일 태스크를 구성합니다.
+     *
+     * - UTF-8 인코딩 설정
+     * - processTestResources 의존성 추가 (리소스 먼저 처리)
      */
     private fun configureJavaCompile(project: Project) {
-        project.tasks.withType(JavaCompile::class.java) {
+        project.tasks.withType(JavaCompile::class.java).configureEach {
             options.encoding = "UTF-8"
         }
-    }
 
-    /**
-     * 'gwtTest' 태스크 관련 설정을 수행합니다.
-     * - 'gwtTest' 태스크가 'openWebServer' 태스크에 의존하도록 설정합니다.
-     */
-    private fun configureGwtTestTask(project: Project, openWebserverTask: TaskProvider<WebServerTask>) {
-        project.tasks.named("gwtTest") {
-            dependsOn(openWebserverTask)
+        // 컴파일 전에 테스트 리소스 처리
+        project.tasks.named("compileJava") {
+            inputs.files(project.tasks.named("processTestResources"))
         }
     }
 
     /**
-     * Test 태스크 관련 설정을 수행합니다.
-     * - 'gwt' 확장 생성
-     * - 'gwtTestCompile' 태스크 의존성 추가
+     * Test 태스크를 구성합니다.
+     *
+     * - JUnit Platform 사용 설정
+     * - 웹 서버 시작/종료 의존성 설정
      */
-    private fun configureTestTasks(project: Project, gwtTestTask: TaskProvider<GwtTestTask>) {
+    private fun configureTestTasks(project: Project) {
         project.tasks.withType(Test::class.java).configureEach {
             useJUnitPlatform()
-            dependsOn(gwtTestTask)
+            dependsOn("openWebServer")
+            finalizedBy("closeWebServer")
         }
     }
 
     /**
-     * 'war' 태스크가 존재할 경우 'test' 태스크에 대한 의존성을 설정합니다.
+     * war 태스크를 구성합니다.
+     *
+     * war 플러그인이 적용된 경우, war 태스크가 test에 의존하도록 설정합니다.
      */
     private fun configureWarTask(project: Project) {
         project.plugins.withId("war") {

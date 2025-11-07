@@ -4,7 +4,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.docstr.gwt.AbstractBaseTask
-import org.gradle.kotlin.dsl.exclude
 
 /**
  * GWT를 위한 Lombok 어노테이션 처리를 설정하는 플러그인
@@ -18,9 +17,10 @@ class GwtLombokPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.plugins.apply("java")
         project.plugins.apply("org.docstr.gwt")
-        project.configurations.all {
-            exclude(group="jakarta.servlet", module="jakarta.servlet-api")
-        }
+
+        // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
+        project.excludeJakartaServletApi()
+
         project.extensions.getByType(SourceSetContainer::class.java).apply {
             named("main") {
                 java.srcDirs(project.layout.buildDirectory.dir("generated/sources/annotationProcessor/java/main"))
@@ -31,7 +31,10 @@ class GwtLombokPlugin : Plugin<Project> {
         }
         project.afterEvaluate {
             val annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
-            val lombok = annotationProcessorConfig?.find { it.name.startsWith("lombok") }
+            val lombok = annotationProcessorConfig?.find { dependency ->
+                // Lombok jar 파일명 패턴: lombok-1.18.30.jar, lombok-1.18.30-sources.jar 등
+                dependency.name.matches(Regex("^lombok-\\d+\\.\\d+\\.\\d+.*\\.jar$"))
+            }
             if (lombok != null) {
                 project.tasks.withType(AbstractBaseTask::class.java).configureEach {
                     jvmArgs = jvmArgs + "-javaagent:${lombok}=ECJ"
