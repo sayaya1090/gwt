@@ -113,25 +113,30 @@ class GwtTestPlugin : Plugin<Project> {
     }
 
     /**
-     * GWT 개발 모드 태스크를 구성합니다.
+     * GWT 개발 모드의 extraSourceDirs를 구성합니다.
      *
-     * 테스트 소스와 리소스를 extraSourceDirs에 추가하여
+     * 테스트 소스와 리소스를 extension.devMode.extraSourceDirs에 추가하여
      * 개발 모드에서도 테스트 코드를 사용할 수 있도록 설정합니다.
      *
-     * **중요:** extension을 직접 수정하지 않고 태스크의 extraSourceDirs만 수정합니다.
+     * **중요:** afterEvaluate에서 호출되어 사용자 설정 이후에 적용됩니다.
+     *           사용자가 이미 extraSourceDirs를 설정했다면, 여기서 추가로 병합됩니다.
      */
     private fun configureGwtDevMode(project: Project) {
         project.tasks.named("gwtDevMode", GwtDevModeTask::class.java).configure {
             dependsOn("gwtGenerateTestHtml")
+        }
 
+        project.afterEvaluate {
+            val extension = project.extensions.getByType(GwtPluginExtension::class.java)
             val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
             val mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
             val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
 
-            extraSourceDirs.from(
+            extension.devMode.extraSourceDirs.from(
                 mainSourceSet.allSource.sourceDirectories,
                 mainSourceSet.resources.sourceDirectories,
                 mainSourceSet.output,
+                mainSourceSet.runtimeClasspath,
 
                 testSourceSet.allSource.sourceDirectories,
                 testSourceSet.resources.sourceDirectories,
