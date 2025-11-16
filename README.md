@@ -1,29 +1,31 @@
-# GWT Gradle 플러그인
+# GWT Gradle Plugin
 
-이 프로젝트는 Gradle 환경에서 GWT(Google Web Toolkit) 개발, 특히 테스트와 Lombok 사용을 간소화하기 위한 플러그인입니다. 기존의 `org.docstr.gwt` 플러그인을 확장하여 GWT 테스트에 필요한 반복적인 설정과 실행 과정을 자동화합니다.
+This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) development in a Gradle environment, with a special focus on testing and Lombok integration. It extends the existing `org.docstr.gwt` plugin and automates repetitive setup and execution steps required for GWT tests.
 
-## ✨ 주요 기능
+## ✨ Key Features
 
-### Gradle 플러그인
-- **Lombok 완벽 지원**: GWT 컴파일러가 Lombok 어노테이션을 처리할 수 있도록 `-javaagent`를 자동으로 설정합니다.
-- **테스트용 웹 서버 자동 관리**: GWT 테스트 실행 시 Ktor 기반의 내장 웹 서버를 자동으로 시작하고, 테스트가 끝나면(성공/실패 무관) 반드시 종료하여 리소스를 안전하게 정리합니다.
-- **HTML 호스트 파일 자동 생성**: 각 GWT 테스트 모듈에 필요한 HTML 파일을 자동으로 생성하여, 수동으로 파일을 관리할 필요가 없습니다. (`rename-to` 속성 포함)
-- **간소화된 테스트 설정**: 테스트 태스크에 `gwt` 확장을 통해 웹서버 포트 등 GWT 테스트 관련 설정을 직관적으로 관리할 수 있습니다.
-- **원활한 태스크 통합**: Gradle의 `test` 태스크를 실행하기만 하면 GWT 컴파일, 서버 실행, 테스트, 서버 종료까지 모든 과정이 자동으로 처리됩니다.
+### Gradle Plugin
 
-### kotest+selenium 테스트 라이브러리 (`gwt-test`)
-- **GWT 전용 테스트 베이스**: Kotest BehaviorSpec을 확장한 `GwtTestSpec` 제공
-- **자동 ChromeDriver 설정**: Headless 모드, 브라우저 로깅 자동 활성화
-- **콘솔 로그 검증**: `shouldContainLog`, `shouldNotContainLog` 등 편리한 매처 제공
-- **자동 리소스 정리**: 테스트 종료 시 WebDriver 자동 종료
+- **Full Lombok Support**: Automatically configures the `-javaagent` option so that the GWT compiler can process Lombok annotations.
+- **Automatic Test Web Server Management**: Automatically starts a Ktor-based embedded web server when running GWT tests and ensures that it is always shut down after tests complete (regardless of success or failure) to safely clean up resources.
+- **Automatic HTML Host File Generation**: Automatically generates the HTML host file required for each GWT test module, including support for the `rename-to` attribute, so you don’t have to manage these files manually.
+- **Simplified Test Configuration**: Manage GWT test–related settings (like web server ports) intuitively through a `gwt` extension on test tasks.
+- **Seamless Task Integration**: Simply running the Gradle `test` task automatically takes care of GWT compilation, server startup, test execution, and server shutdown.
 
-## 🚀 시작하기
+### kotest + selenium Test Library (`gwt-test`)
 
-### 1. Gradle 플러그인 설정
+- **GWT-Specific Test Base**: Provides `GwtTestSpec`, which extends Kotest’s `BehaviorSpec`.
+- **Automatic ChromeDriver Setup**: Configures ChromeDriver in headless mode with browser logging enabled by default.
+- **Console Log Verification**: Convenient matchers such as `shouldContainLog` and `shouldNotContainLog`.
+- **Automatic Resource Cleanup**: Automatically shuts down WebDriver when tests finish.
+
+## 🚀 Getting Started
+
+### 1. Configure the Gradle Plugin
 
 #### Kotlin DSL
 
-`build.gradle.kts` 파일의 `plugins` 블록에 플러그인을 추가합니다.
+Add the plugin to the `plugins` block in your `build.gradle.kts`:
 
 ```kotlin
 plugins {
@@ -39,9 +41,9 @@ plugins {
 }
 ```
 
-### 2. kotest+selenium 테스트 라이브러리 추가 (선택사항)
+### 2. Add the kotest + selenium Test Library (Optional)
 
-kotest+selenium을 사용한 브라우저 테스트가 필요한 경우:
+If you want to write browser tests using kotest + selenium:
 
 ```kotlin
 dependencies {
@@ -49,9 +51,9 @@ dependencies {
 }
 ```
 
-## ⚙️ 설정
+## ⚙️ Configuration
 
-플러그인은 기본 GWT 플러그인 설정을 확장합니다. `gwt` 블록에서 GWT 설정을 구성하세요:
+The plugin extends the base GWT plugin configuration. Configure GWT in the `gwt` block:
 
 ```kotlin
 gwt {
@@ -63,18 +65,13 @@ gwt {
     }
 }
 
-tasks.withType<Test> {
-    extensions.configure<GwtTestTaskExtension>("gwt") {
-        webPort.set(8080) // 웹서버 포트 (기본값: 8080)
-    }
-}
 ```
 
-## 태스크
+## Tasks
 
 ### `gwtTestCompile`
 
-main과 test 소스를 모두 포함하여 GWT 테스트 모듈을 컴파일합니다.
+Compiles GWT test modules including both `main` and `test` sources.
 
 ```bash
 ./gradlew gwtTestCompile
@@ -82,7 +79,7 @@ main과 test 소스를 모두 포함하여 GWT 테스트 모듈을 컴파일합�
 
 ### `gwtDevMode`
 
-테스트 소스를 사용할 수 있는 GWT 개발 모드를 시작합니다.
+Starts GWT Dev Mode with access to test sources.
 
 ```bash
 ./gradlew gwtDevMode
@@ -90,15 +87,15 @@ main과 test 소스를 모두 포함하여 GWT 테스트 모듈을 컴파일합�
 
 ### `test`
 
-테스트를 실행합니다 (자동으로 `gwtTestCompile`에 의존).
+Runs tests (automatically depends on `gwtTestCompile`).
 
 ```bash
 ./gradlew test
 ```
 
-## 📖 사용 예시
+## 📖 Usage Examples
 
-### 기본 플러그인 설정
+### Basic Plugin Setup
 
 ```kotlin
 plugins {
@@ -115,11 +112,11 @@ dependencies {
     implementation("org.gwtproject:gwt-user:2.12.2")
     compileOnly("org.gwtproject:gwt-dev:2.12.2")
 
-    // Lombok 지원
+    // Lombok support
     implementation("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
-    // 테스트
+    // Tests
     testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
 }
 
@@ -132,23 +129,18 @@ gwt {
     }
 }
 
-tasks.test {
-    extensions.configure<GwtTestTaskExtension>("gwt") {
-        webPort.set(8080)
-    }
-}
 ```
 
-## 모듈 구조
+## Module Structure
 
-테스트가 포함된 일반적인 GWT 모듈 구조:
+A typical GWT module structure with tests:
 
 ```
 src/
 ├── main/
 │   ├── java/
 │   │   └── com/example/
-│   │       ├── App.gwt.xml          # 메인 모듈
+│   │       ├── App.gwt.xml          # Main module
 │   │       └── client/
 │   │           └── App.java
 │   └── webapp/
@@ -156,16 +148,16 @@ src/
 └── test/
     ├── java/
     │   └── com/example/
-    │       ├── Test.gwt.xml         # 테스트 모듈
+    │       ├── Test.gwt.xml         # Test module
     │       └── client/
     │           └── AppTest.java
-    └── resources/                    # 또는 webapp/
-        └── Test.html                # 없으면 war 디렉토리에 자동 생성
+    └── resources/                    # or webapp/
+        └── Test.html                # Auto-generated in war dir if missing
 ```
 
-**참고:** HTML 파일은 `gwt.war`로 설정된 디렉토리에 생성됩니다. 기본적으로 `src/main/webapp`이며, 없을 경우 자동으로 생성됩니다.
+**Note:** HTML files are generated in the directory configured as `gwt.war`. By default, this is `src/main/webapp`, and it will be created automatically if it does not exist.
 
-### 모듈 XML 예제
+### Example Module XML
 
 **src/main/java/com/example/App.gwt.xml:**
 ```xml
@@ -186,11 +178,11 @@ src/
 </module>
 ```
 
-## HTML 런처 자동 생성
+## Automatic HTML Launcher Generation
 
-`gwtTestCompile` 태스크는 각 GWT 모듈에 대한 HTML 파일이 `war` 디렉토리에 없으면 자동으로 생성합니다. 모듈의 `rename-to` 속성을 읽어 파일명을 결정합니다.
+The `gwtTestCompile` task automatically generates an HTML file for each GWT module in the `war` directory if it does not already exist. The plugin reads the module’s `rename-to` attribute to determine the file name.
 
-**예시:** `Test.gwt.xml`에 `rename-to="test"` 속성이 있으면:
+**Example:** If `Test.gwt.xml` has `rename-to="test"`:
 
 ```html
 <!DOCTYPE html>
@@ -203,68 +195,60 @@ src/
 </html>
 ```
 
-**생성 위치:** `gwt.war` 디렉토리 (기본값: `src/main/webapp`)
+**Generated location:** The directory configured as `gwt.war` (default: `src/main/webapp`).
 
-## kotest 테스트 작성하기
+## Writing kotest Tests
 
-`gwt-test` 라이브러리를 사용하면 kotest+selenium 기반 브라우저 테스트를 간편하게 작성할 수 있습니다.
+Using the `gwt-test` library, you can easily write browser tests with kotest + selenium.
 
-### 기본 사용법
+### Basic Usage
 
 ```kotlin
 import dev.sayaya.gwt.test.GwtTestSpec
 import dev.sayaya.gwt.test.GwtHtml
 
-@GwtHtml("src/test/webapp/test.html")  // 테스트할 HTML 파일
+@GwtHtml("src/test/webapp/test.html")  // HTML file under test
 class MenuTest : GwtTestSpec({
-    Given("메뉴가 로드되면") {
-        When("메뉴 버튼을 클릭하면") {
+    Given("the menu is loaded") {
+        When("the menu button is clicked") {
             document.findElement(By.id("menu-button")).click()
 
-            Then("메뉴가 표시되어야 한다") {
+            Then("the menu should be visible") {
                 document shouldContainLog "Menu opened"
             }
         }
     }
-
-    Given("잘못된 입력이 들어오면") {
-        When("에러가 발생하면") {
-            Then("에러 로그가 출력되지 않아야 한다") {
-                document shouldNotContainLog "ERROR"
-            }
-        }
-    }
 })
 ```
 
-### 제공되는 헬퍼 메서드
+### Helper Methods
 
-#### 콘솔 로그 검증
+#### Console Log Verification
 
 ```kotlin
-// 로그에 특정 텍스트가 포함되어 있는지 확인 (검증 후 자동 클리어)
+// Check if a specific text is contained in the logs (logs are automatically cleared afterward)
 document shouldContainLog "Expected message"
 
-// 로그에 특정 텍스트가 없는지 확인 (검증 후 자동 클리어)
+// Check that a specific text is not present in the logs (logs are automatically cleared afterward)
 document shouldNotContainLog "Error message"
 
-// 모든 콘솔 로그 가져오기
+// Retrieve all console logs
 val logs: List<String> = document.getConsoleLogs()
 
-// 콘솔 로그 수동 클리어
+// Manually clear console logs
 document.clearConsoleLogs()
 ```
 
-#### 설정 옵션
+#### Configuration Options
 
 ```kotlin
-@GwtHtml("src/test/webapp/test.html")  // HTML 파일 경로
+@GwtHtml("src/test/webapp/test.html")  // HTML file path
 class MyTest : GwtTestSpec({
-    // 테스트 로직...
+    // Test logic...
 })
 ```
 
-### 실제 사용 예시
+### Real-World Example
 
 ```kotlin
 import dev.sayaya.gwt.test.GwtTestSpec
@@ -273,20 +257,20 @@ import org.openqa.selenium.By
 
 @GwtHtml("src/test/webapp/test.html")
 class UserInterfaceTest : GwtTestSpec({
-    Given("사용자 인터페이스가 로드되면") {
-        When("로그인 버튼을 클릭하면") {
+    Given("The page is loaded") {
+        When("Login button is clicked") {
             val loginButton = document.findElement(By.id("login-btn"))
             loginButton.click()
 
-            Then("로그인 다이얼로그가 표시되어야 한다") {
+            Then("Login dialog should be displayed") {
                 document shouldContainLog "Login dialog opened"
             }
         }
 
-        When("사용자 이름을 입력하면") {
+        When("Username is entered") {
             document.findElement(By.id("username")).sendKeys("testuser")
 
-            Then("입력 검증 로그가 출력되어야 한다") {
+            Then("A validation log should be printed") {
                 document shouldContainLog "Username validated"
             }
         }
@@ -294,58 +278,36 @@ class UserInterfaceTest : GwtTestSpec({
 })
 ```
 
-## 요구사항
+## Requirements
 
-### Gradle 플러그인
+### Gradle Plugin
+
 - Gradle 8.0+
-- Kotlin 1.9+ (Kotlin DSL용)
+- Kotlin 1.9+ (for Kotlin DSL)
 - Java 11+
 - GWT 2.10.0+
 
-### kotest+selenium 테스트 라이브러리
-- ChromeDriver (자동 다운로드됨)
+### kotest + selenium Test Library
+
+- ChromeDriver (downloaded automatically)
 - Kotest 6.0+
 - Selenium 4.27+
+  
+## 🏗️ Architecture
 
-## 📦 배포
-
-이 플러그인은 GitHub Packages에 배포됩니다. 플러그인을 사용하려면 저장소 설정이 필요합니다:
-
-```kotlin
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven {
-            url = uri("https://maven.pkg.github.com/sayaya1090/maven")
-            credentials {
-                username = project.findProperty("github_username") as String? ?: System.getenv("GITHUB_USERNAME")
-                password = project.findProperty("github_password") as String? ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-}
-```
-
-**보안 참고사항:** 자격 증명을 버전 관리에 커밋하지 마세요. 다음 방법 중 하나를 사용하세요:
-- `~/.gradle/gradle.properties`에 저장 (권장)
-- 환경 변수 사용
-- 프로젝트 루트의 `gradle.properties` (반드시 `.gitignore`에 추가)
-
-## 🏗️ 아키텍처
-
-### 플러그인 계층 구조
+### Plugin Hierarchy
 
 ```
 dev.sayaya.gwt (GwtPlugin)
 ├── dev.sayaya.gwt.lombok (GwtLombokPlugin)
-│   └── Lombok 어노테이션 처리를 위한 -javaagent 자동 설정
+│   └── Automatically sets -javaagent for Lombok annotation processing
 └── dev.sayaya.gwt.test (GwtTestPlugin)
-    ├── org.docstr.gwt (기본 GWT 플러그인 적용)
-    ├── GwtTestCompileTask 등록
-    └── 웹 서버 자동 관리 (테스트 시)
+    ├── Applies org.docstr.gwt (base GWT plugin)
+    ├── Registers GwtTestCompileTask
+    └── Manages web server automatically during tests
 ```
 
-### 태스크 의존성 흐름
+### Task Dependency Flow
 
 ```
 test
@@ -361,44 +323,37 @@ war
 └── dependsOn: test
 ```
 
-**태스크 설명:**
-- `gwtGenerateTestHtml`: GWT 테스트 모듈용 HTML 호스트 파일 자동 생성
-- `gwtTestCompile`: GWT 테스트 모듈 컴파일 (main + test 소스 포함)
-- `openWebServer`: Ktor 기반 정적 파일 웹서버 시작
-- `closeWebServer`: 웹서버 종료
-- `gwtDevMode`: 테스트 소스를 포함한 GWT 개발 모드 실행
 
-## 문제 해결
+**Task Descriptions:**
+- `gwtGenerateTestHtml`: Automatically generates HTML host files for GWT test modules.
+- `gwtTestCompile`: Compiles GWT test modules (includes both main and test sources).
+- `openWebServer`: Starts a Ktor-based static file web server.
+- `closeWebServer`: Stops the web server.
+- `gwtDevMode`: Runs GWT Dev Mode including test sources.
 
-### 모듈 XML을 찾을 수 없음
+## Troubleshooting
+### Cannot Find Module XML
+**Error:** `Cannot find GWT module XML file: com/example/Test.gwt.xml`
+**Solution:** Make sure the module XML file exists in one of the source directories and that its path exactly matches the module name.
 
-**오류:** `Cannot find GWT module XML file: com/example/Test.gwt.xml`
+### Lombok Not Working
+**Symptom:** Lombok annotations are not processed during GWT compilation.
+**Solution:** This plugin automatically adds the required `-javaagent` configuration to the GWT compiler when Lombok is present in the `annotationProcessor` configuration. You do not need to manually configure `jvmArgs` or `extraJvmArgs`.
 
-**해결책:** 모듈 XML 파일이 소스 디렉토리 중 하나에 존재하고 모듈 이름과 정확히 일치하는지 확인하세요.
-
-### Lombok이 작동하지 않음
-
-**오류:** GWT 컴파일에서 Lombok 어노테이션이 처리되지 않음
-
-**해결책:** 이 플러그인은 `annotationProcessor` 설정에 Lombok 의존성이 추가되면 자동으로 GWT 컴파일러에 필요한 `-javaagent` 설정을 추가합니다. 따라서 수동으로 `jvmArgs`나 `extraJvmArgs`를 설정할 필요가 없습니다.
-
-다음 사항을 확인하세요:
-1. `build.gradle.kts`의 `dependencies` 블록에 Lombok이 `annotationProcessor`로 올바르게 추가되었는지 확인하세요.
+Check the following:
+1. Ensure Lombok is correctly added as an `annotationProcessor` dependency in `build.gradle.kts`:
    ```kotlin
    dependencies {
        // ...
        annotationProcessor("org.projectlombok:lombok:...")
    }
    ```
-2. `dev.sayaya.gwt.lombok` 플러그인 또는 이를 포함하는 `dev.sayaya.gwt` 플러그인이 적용되었는지 확인하세요.
+2. Ensure that the `dev.sayaya.gwt.lombok` plugin, or the umbrella `dev.sayaya.gwt` plugin that includes it, is applied.
+If these settings are correct, Lombok should work without further configuration.
 
-플러그인이 자동으로 모든 것을 처리하므로, 위 설정이 올바르다면 Lombok이 작동해야 합니다.
-
-### 컴파일 중 메모리 부족
-
-**오류:** `java.lang.OutOfMemoryError: Java heap space`
-
-**해결책:** GWT 설정에서 힙 크기를 늘리세요:
+### Out of Memory During Compilation
+**Error:** `java.lang.OutOfMemoryError: Java heap space`
+**Solution:** Increase heap size in the GWT configuration:
 
 ```kotlin
 gwt {
@@ -407,46 +362,31 @@ gwt {
 }
 ```
 
-### 웹 서버가 종료되지 않음
+### Web Server Does Not Shut Down
+**Symptom:** The port remains in use even after tests finish.
+**Solution:**
+1. Do not start or stop the server manually; the plugin manages it automatically.
+2. The server is shut down via `finalizedBy` even if tests fail.
+3. To shut it down manually, run: `./gradlew closeWebServer`
 
-**증상:** 테스트 후에도 포트가 계속 사용 중
 
-**해결책:**
-1. 플러그인이 자동으로 서버를 관리하므로 수동으로 시작/종료하지 마세요
-2. 테스트가 실패해도 `finalizedBy`로 서버가 종료됩니다
-3. 수동으로 종료하려면: `./gradlew closeWebServer`
+## License
 
-### 웹서버 포트 변경
+This project is available under the terms specified in the project’s license file.
 
-**기본 포트:** 8080
+## Related Projects
 
-**변경 방법:**
-```kotlin
+- [gwt-gradle-plugin](https://github.com/docstr/gwt-gradle-plugin) – Base GWT Gradle plugin
+- [GWT Project](https://www.gwtproject.org/) – Google Web Toolkit
+- [Lombok](https://projectlombok.org/) – Java annotation processor
 
-tasks.test {
-    gwt {
-        webPort.set(9876) // 원하는 포트로 변경
-        codePort.set(9877)
-    }
-}
-```
+## 📝 Changelog
 
-## 라이선스
+### 2.2.7 (Latest)
 
-이 프로젝트는 프로젝트의 라이선스 파일에 명시된 조건에 따라 사용할 수 있습니다.
-
-## 관련 프로젝트
-
-- [gwt-gradle-plugin](https://github.com/docstr/gwt-gradle-plugin) - 기본 GWT Gradle 플러그인
-- [GWT Project](https://www.gwtproject.org/) - Google Web Toolkit
-- [Lombok](https://projectlombok.org/) - Java 어노테이션 프로세서
-
-## 📝 변경 이력
-
-### 2.2.7 (최신)
-- ✨ GWT 테스트를 위한 내장 웹 서버 자동 관리 기능 추가
-- ✨ 테스트용 HTML 호스트 파일 자동 생성 (`rename-to` 속성 지원)
-- ✨ Lombok Java Agent 자동 설정 기능 추가
-- 📚 모든 public API에 대한 KDoc 문서화 완료
-- ✅ 포괄적인 테스트 커버리지 달성
-- 🔧 설정 헬퍼 메서드를 사용한 리팩토링
+- ✨ Added automatic built-in web server management for GWT tests
+- ✨ Added automatic HTML host file generation (with `rename-to` support)
+- ✨ Added Lombok Java Agent auto-configuration
+- 📚 Completed KDoc documentation for all public APIs
+- ✅ Achieved comprehensive test coverage
+- 🔧 Refactored using configuration helper methods
