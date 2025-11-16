@@ -1,7 +1,9 @@
 plugins {
     kotlin("jvm")
     id("maven-publish")
+    signing
     id("org.jetbrains.kotlinx.kover")
+    id("com.vanniktech.maven.publish") version "0.35.0"
 }
 
 repositories {
@@ -30,13 +32,17 @@ tasks {
     }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-            artifactId = "gwt-test"
-        }
+signing {
+    val signingKey = System.getenv("GPG_PRIVATE_KEY")
+    val signingPassword = System.getenv("GPG_PASSWORD")
+    if (signingKey != null && signingPassword != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    } else {
+        useGpgCmd()
     }
+}
+
+publishing {
     repositories {
         maven {
             name = "GitHubPackages"
@@ -45,6 +51,39 @@ publishing {
                 username = project.findProperty("github_username") as String? ?: System.getenv("GITHUB_USERNAME")
                 password = project.findProperty("github_password") as String? ?: System.getenv("GITHUB_TOKEN")
             }
+        }
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(group.toString(), "gwt-test", version.toString())
+
+    pom {
+        name.set("GWT Test Library")
+        description.set("Kotest and Selenium integration library for GWT testing with automatic ChromeDriver setup and console log verification")
+        url.set("https://github.com/sayaya1090/gwt")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("sayaya1090")
+                name.set("sayaya")
+                email.set("sayaya1090@gmail.com")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:git://github.com/sayaya1090/gwt.git")
+            developerConnection.set("scm:git:ssh://github.com/sayaya1090/gwt.git")
+            url.set("https://github.com/sayaya1090/gwt")
         }
     }
 }
