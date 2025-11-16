@@ -369,18 +369,6 @@ gwt {
 2. The server is shut down via `finalizedBy` even if tests fail.
 3. To shut it down manually, run: `./gradlew closeWebServer`
 
-### Changing the Web Server Port
-**Default port:** 8080
-**How to change:**
-```kotlin
-tasks.test {
-    gwt {
-        webPort.set(9876) // 원하는 포트로 변경
-        codePort.set(9877)
-    }
-}
-```
-
 
 ## License
 
