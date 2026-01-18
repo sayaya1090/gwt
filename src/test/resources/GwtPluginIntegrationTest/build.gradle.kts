@@ -1,7 +1,7 @@
 import dev.sayaya.gwt
 
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.3.0"
     id("dev.sayaya.gwt")
 }
 
@@ -16,9 +16,9 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
-    testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
-    testImplementation("org.seleniumhq.selenium:selenium-java:4.38.0")
-    testImplementation("org.seleniumhq.selenium:selenium-chrome-driver:4.38.0")
+    testImplementation("io.kotest:kotest-runner-junit5:6.0.7")
+    testImplementation("org.seleniumhq.selenium:selenium-java:4.39.0")
+    testImplementation("org.seleniumhq.selenium:selenium-chrome-driver:4.39.0")
 }
 
 tasks {

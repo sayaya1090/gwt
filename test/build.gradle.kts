@@ -12,12 +12,12 @@ repositories {
 
 dependencies {
     // Selenium WebDriver
-    api("org.seleniumhq.selenium:selenium-java:4.27.0")
-    api("org.seleniumhq.selenium:selenium-chrome-driver:4.27.0")
+    api("org.seleniumhq.selenium:selenium-java:4.39.0")
+    api("org.seleniumhq.selenium:selenium-chrome-driver:4.39.0")
 
     // Kotest
-    api("io.kotest:kotest-runner-junit5:6.0.4")
-    api("io.kotest:kotest-assertions-core:6.0.4")
+    api("io.kotest:kotest-runner-junit5:6.0.7")
+    api("io.kotest:kotest-assertions-core:6.0.7")
 
     // Kotlin
     api(kotlin("stdlib"))
@@ -33,13 +33,9 @@ tasks {
 }
 
 signing {
-    val signingKey = System.getenv("GPG_PRIVATE_KEY")
-    val signingPassword = System.getenv("GPG_PASSWORD")
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-    } else {
-        useGpgCmd()
-    }
+    val signingKey = project.findProperty("signing.secretKey") as String? ?: System.getenv("GPG_PRIVATE_KEY")
+    val signingPassword = project.findProperty("signing.passphrase") as String? ?: System.getenv("GPG_PASSWORD")
+    useInMemoryPgpKeys(signingKey, signingPassword)
 }
 
 publishing {

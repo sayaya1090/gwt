@@ -1,10 +1,10 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.3.0"
     id("maven-publish")
     id("com.gradle.plugin-publish") version "2.0.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.2"
+    id("org.jetbrains.kotlinx.kover") version "0.9.4"
 }
 
 allprojects {
@@ -22,11 +22,11 @@ subprojects {
 }
 dependencies {
     implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$version")
-    implementation("io.ktor:ktor-server-core:3.3.1")
-    implementation("io.ktor:ktor-server-netty:3.3.1")
+    implementation("io.ktor:ktor-server-core:3.3.3")
+    implementation("io.ktor:ktor-server-netty:3.3.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     // 테스트 구현에 필요한 의존성
-    testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
+    testImplementation("io.kotest:kotest-runner-junit5:6.0.7")
     kover(project(":test"))
 }
 gradlePlugin {
