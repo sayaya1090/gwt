@@ -1,25 +1,23 @@
 package dev.sayaya.gwt.test
 
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
 import com.google.gson.Strictness
+import com.microsoft.playwright.Browser
+import com.microsoft.playwright.BrowserType
+import com.microsoft.playwright.Page
+import com.microsoft.playwright.Playwright
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
-import org.openqa.selenium.chrome.ChromeDriver
-import org.openqa.selenium.chrome.ChromeOptions
-import org.openqa.selenium.logging.LogEntry
-import org.openqa.selenium.logging.LogType
-import org.openqa.selenium.logging.LoggingPreferences
 import java.io.File
-import java.util.logging.Level
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * GWT Selenium 테스트를 위한 Kotest BehaviorSpec 베이스 클래스
+ * GWT Playwright 테스트를 위한 Kotest BehaviorSpec 베이스 클래스
  *
  * ## 주요 기능
- * - ChromeDriver 자동 설정 (headless 모드, 브라우저 로깅 활성화)
+ * - Playwright 자동 실행 (headless 모드, 브라우저 로깅 활성화)
  * - 로컬 HTML 파일 자동 로드
  * - 콘솔 로그 검증 헬퍼 메서드
  * - 테스트 종료 시 자동 cleanup
@@ -53,38 +51,54 @@ open class GwtTestSpec(
     }
 
     /**
-     * ChromeDriver 인스턴스
+     * Playwright 인스턴스
      */
-    lateinit var document: ChromeDriver
-
+    private lateinit var playwright: Playwright
+    private lateinit var browser: Browser
+    lateinit var document: Page
+    private val consoleLogs = CopyOnWriteArrayList<Any?>()
     init {
         body()
 
         beforeSpec {
-            document = createChromeDriver()
+            playwright = Playwright.create()
+            browser = playwright.chromium().launch(
+                BrowserType.LaunchOptions().setHeadless(true)
+            )
+
+            document = browser.newPage()
+
+            // 브라우저 콘솔 로그 수집
+            document.onConsoleMessage { msg ->
+                // msg.text()는 사람이 읽기 좋은 문자열이지만, 객체/숫자/불리언 등을 구분하려면 args를 함께 본다.
+                val args = msg.args()
+                if (args.isNullOrEmpty()) {
+                    consoleLogs.add(parseMaybeJson(msg.text()))
+                } else if (args.size == 1) {
+                    consoleLogs.add(runCatching { args[0].jsonValue() }.getOrElse { msg.text() })
+                } else {
+                    val values = args.map { handle ->
+                        runCatching { handle.jsonValue() }.getOrElse { handle.toString() }
+                    }
+                    consoleLogs.add(values)
+                }
+            }
             loadHtmlFile()
         }
 
         afterSpec {
-            document.quit()
+            runCatching { document.close() }
+            runCatching { browser.close() }
+            runCatching { playwright.close() }
         }
     }
-
-    /**
-     * ChromeDriver를 생성하고 로깅을 설정합니다.
-     */
-    private fun createChromeDriver(): ChromeDriver {
-        val options = ChromeOptions().apply {
-            addArguments("--headless")
-            addArguments("--disable-gpu")
-            addArguments("--no-sandbox")
-            addArguments("--disable-dev-shm-usage")
-
-            val logPrefs = LoggingPreferences()
-            logPrefs.enable(LogType.BROWSER, Level.ALL)
-            setCapability("goog:loggingPrefs", logPrefs)
+    private val gson = GsonBuilder().setStrictness(Strictness.LENIENT).create()
+    private fun parseMaybeJson(text: String): Any {
+        return try {
+            gson.fromJson(text, Any::class.java) ?: text
+        } catch (_: JsonSyntaxException) {
+            text
         }
-        return ChromeDriver(options)
     }
 
     /**
@@ -96,45 +110,27 @@ open class GwtTestSpec(
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
-        document.get("file://${html.absolutePath}")
-    }
-
-    /**
-     * 브라우저 로그에서 순수한 메시지만 파싱합니다.
-     */
-    private val logRegex = Regex("""\s+\d+:\d+\s+""")
-    private val gson = GsonBuilder().setStrictness(Strictness.LENIENT).create()
-    private fun parseMessage(logEntry: LogEntry): Any {
-        val rawMessage = logEntry.message
-        val parts = logRegex.split(rawMessage, limit = 2)
-        val logContentStr = parts.last()
-        return try {
-            gson.fromJson(logContentStr, Any::class.java) ?: logContentStr
-        } catch (_: JsonSyntaxException) {
-            logContentStr
-        }
+        document.navigate("file://${html.absolutePath}")
     }
 
     /**
      * 브라우저 콘솔 로그 검증 공통 메서드
      *
-     * @param value 검증할 로그 값
+     * @param expected 검증할 로그 값
      * @param shouldContain true면 포함되어야 하고, false면 포함되지 않아야 함
      * @throws AssertionError 검증 실패 시
      */
-    private fun ChromeDriver.checkLog(value: Any, shouldContain: Boolean) {
-        val logs = this.manage().logs().get(LogType.BROWSER)
-        val parsedLogs = logs.map(::parseMessage)
-        val found = parsedLogs.any { it == value }
+    private fun Page.checkLog(expected: Any, shouldContain: Boolean) {
+        val found = consoleLogs.any { it == expected }
 
         val expectedCondition = if (shouldContain) "contain" else "NOT to contain"
         val actualCondition = if (found) "found" else "not found"
 
         withClue({
             "Expected log to $expectedCondition:\n" +
-                    "  '$value'\n" +
+                    "  '$expected'\n" +
                     "But it was $actualCondition. Actual logs were:\n" +
-                    parsedLogs.joinToString("\n") { "  - $it" }
+                    consoleLogs.joinToString("\n") { "  - $it" }
         }) {
             found shouldBe shouldContain
         }
@@ -147,7 +143,7 @@ open class GwtTestSpec(
      * @param expected 로그에 포함되어야 하는 값
      * @throws AssertionError 로그에 해당 값이 없으면 예외 발생
      */
-    infix fun ChromeDriver.shouldContainLog(expected: Any) {
+    infix fun Page.shouldContainLog(expected: Any) {
         checkLog(expected, shouldContain = true)
     }
 
@@ -158,7 +154,7 @@ open class GwtTestSpec(
      * @param unexpected 로그에 포함되지 않아야 하는 값
      * @throws AssertionError 로그에 해당 값이 있으면 예외 발생
      */
-    infix fun ChromeDriver.shouldNotContainLog(unexpected: Any) {
+    infix fun Page.shouldNotContainLog(unexpected: Any) {
         checkLog(unexpected, shouldContain = false)
     }
 
@@ -167,12 +163,12 @@ open class GwtTestSpec(
      *
      * @return 콘솔 로그 메시지 목록
      */
-    fun ChromeDriver.getConsoleLogs(): List<Any> = this.manage().logs().get(LogType.BROWSER).map(::parseMessage)
+    fun Page.getConsoleLogs(): List<Any?> = consoleLogs.toList()
 
     /**
      * 브라우저 콘솔 로그를 클리어합니다.
      */
-    fun ChromeDriver.clearConsoleLogs() {
-        this.manage().logs().get(LogType.BROWSER)
+    fun Page.clearConsoleLogs() {
+        consoleLogs.clear()
     }
 }

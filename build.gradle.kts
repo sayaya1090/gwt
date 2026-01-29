@@ -22,11 +22,11 @@ subprojects {
 }
 dependencies {
     implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$version")
-    implementation("io.ktor:ktor-server-core:3.3.3")
-    implementation("io.ktor:ktor-server-netty:3.3.3")
+    implementation("io.ktor:ktor-server-core:3.4.0")
+    implementation("io.ktor:ktor-server-netty:3.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     // 테스트 구현에 필요한 의존성
-    testImplementation("io.kotest:kotest-runner-junit5:6.0.7")
+    testImplementation("io.kotest:kotest-runner-junit5:6.1.1")
     kover(project(":test"))
 }
 gradlePlugin {

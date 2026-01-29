@@ -4,7 +4,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
-import org.openqa.selenium.By
 import java.io.File
 
 /**
@@ -58,7 +57,7 @@ class GwtTestSpecTest : GwtTestSpec({
     }
     beforeTest {
         document.clearConsoleLogs()
-        document.navigate().refresh()
+        document.reload()
     }
     afterSpec {
         File("build/test-resources/GwtTestSpecTest").deleteRecursively()
@@ -67,9 +66,9 @@ class GwtTestSpecTest : GwtTestSpec({
     Given("GwtTestSpec을 상속하여 테스트를 실행할 때") {
         When("페이지가 정상적으로 로드되면") {
             Then("페이지 구성 요소에 접근할 수 있다") {
-                document.title shouldBe "GwtTestSpec Test"
-                val h1Element = document.findElement(By.tagName("h1"))
-                h1Element.text shouldBe "GwtTestSpec Test Page"
+                document.title() shouldBe "GwtTestSpec Test"
+                val h1Element = document.locator("h1")
+                h1Element.textContent() shouldBe "GwtTestSpec Test Page"
             }
         }
 
@@ -118,6 +117,7 @@ class GwtTestSpecTest : GwtTestSpec({
         When("따옴표가 없는 로그를 검증하면") {
             Then("원본 형식의 로그를 찾을 수 있어야 한다") {
                 val logs = document.getConsoleLogs()
+
                 // 객체, 숫자 등은 브라우저가 문자열로 변환한 형태로 저장됨
                 // 예: "[object Object]", "12345", "true", "null", "undefined" 등
 
@@ -128,7 +128,7 @@ class GwtTestSpecTest : GwtTestSpec({
 
         When("콘솔 로그를 직접 관리하면") {
             beforeTest {
-                document.navigate().refresh()
+                document.reload()
             }
 
             Then("getConsoleLogs()로 모든 로그를 가져올 수 있다") {

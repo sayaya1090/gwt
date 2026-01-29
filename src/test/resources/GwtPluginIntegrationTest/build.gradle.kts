@@ -1,5 +1,3 @@
-import dev.sayaya.gwt
-
 plugins {
     kotlin("jvm") version "2.3.0"
     id("dev.sayaya.gwt")
@@ -13,12 +11,13 @@ version = "1.0.0"
 group = "com.example"
 
 dependencies {
+    implementation("com.google.elemental2:elemental2-dom:1.3.2")
+
     implementation("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
-    testImplementation("io.kotest:kotest-runner-junit5:6.0.7")
-    testImplementation("org.seleniumhq.selenium:selenium-java:4.39.0")
-    testImplementation("org.seleniumhq.selenium:selenium-chrome-driver:4.39.0")
+    testImplementation("io.kotest:kotest-runner-junit5:6.1.1")
+    testImplementation("com.microsoft.playwright:playwright:1.57.0")
 }
 
 tasks {
@@ -34,9 +33,5 @@ tasks {
     }
     test {
         useJUnitPlatform()
-        gwt {
-            webPort.set(8080)
-            codePort.set(8081)
-        }
     }
 }

@@ -3,7 +3,7 @@ plugins {
     id("maven-publish")
     signing
     id("org.jetbrains.kotlinx.kover")
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 repositories {
@@ -11,13 +11,12 @@ repositories {
 }
 
 dependencies {
-    // Selenium WebDriver
-    api("org.seleniumhq.selenium:selenium-java:4.39.0")
-    api("org.seleniumhq.selenium:selenium-chrome-driver:4.39.0")
+    // Playwright
+    api("com.microsoft.playwright:playwright:1.57.0")
 
     // Kotest
-    api("io.kotest:kotest-runner-junit5:6.0.7")
-    api("io.kotest:kotest-assertions-core:6.0.7")
+    api("io.kotest:kotest-runner-junit5:6.1.1")
+    api("io.kotest:kotest-assertions-core:6.1.1")
 
     // Kotlin
     api(kotlin("stdlib"))
@@ -58,7 +57,7 @@ mavenPublishing {
 
     pom {
         name.set("GWT Test Library")
-        description.set("Kotest and Selenium integration library for GWT testing with automatic ChromeDriver setup and console log verification")
+        description.set("Kotest and Playwright integration library for GWT testing with console log verification")
         url.set("https://github.com/sayaya1090/gwt")
 
         licenses {

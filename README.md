@@ -12,10 +12,10 @@ This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) de
 - **Simplified Test Configuration**: Manage GWT test–related settings (like web server ports) intuitively through a `gwt` extension on test tasks.
 - **Seamless Task Integration**: Simply running the Gradle `test` task automatically takes care of GWT compilation, server startup, test execution, and server shutdown.
 
-### kotest + selenium Test Library (`gwt-test`)
+### kotest + playwright Test Library (`gwt-test`)
 
 - **GWT-Specific Test Base**: Provides `GwtTestSpec`, which extends Kotest’s `BehaviorSpec`.
-- **Automatic ChromeDriver Setup**: Configures ChromeDriver in headless mode with browser logging enabled by default.
+- **Automatic Playwright Setup**: Configures Playwright in headless mode with browser logging enabled by default.
 - **Console Log Verification**: Convenient matchers such as `shouldContainLog` and `shouldNotContainLog`.
 - **Automatic Resource Cleanup**: Automatically shuts down WebDriver when tests finish.
 
@@ -41,9 +41,9 @@ plugins {
 }
 ```
 
-### 2. Add the kotest + selenium Test Library (Optional)
+### 2. Add the kotest + playwright Test Library (Optional)
 
-If you want to write browser tests using kotest + selenium:
+If you want to write browser tests using kotest + playwright:
 
 ```kotlin
 dependencies {
@@ -199,7 +199,7 @@ The `gwtTestCompile` task automatically generates an HTML file for each GWT modu
 
 ## Writing kotest Tests
 
-Using the `gwt-test` library, you can easily write browser tests with kotest + selenium.
+Using the `gwt-test` library, you can easily write browser tests with kotest + playwright.
 
 ### Basic Usage
 
@@ -211,7 +211,7 @@ import dev.sayaya.gwt.test.GwtHtml
 class MenuTest : GwtTestSpec({
     Given("the menu is loaded") {
         When("the menu button is clicked") {
-            document.findElement(By.id("menu-button")).click()
+            document.locator("#menu-button").click()
 
             Then("the menu should be visible") {
                 document shouldContainLog "Menu opened"
@@ -253,14 +253,12 @@ class MyTest : GwtTestSpec({
 ```kotlin
 import dev.sayaya.gwt.test.GwtTestSpec
 import dev.sayaya.gwt.test.GwtHtml
-import org.openqa.selenium.By
 
 @GwtHtml("src/test/webapp/test.html")
 class UserInterfaceTest : GwtTestSpec({
     Given("The page is loaded") {
         When("Login button is clicked") {
-            val loginButton = document.findElement(By.id("login-btn"))
-            loginButton.click()
+            document.locator("#login-btn").click()
 
             Then("Login dialog should be displayed") {
                 document shouldContainLog "Login dialog opened"
@@ -268,7 +266,7 @@ class UserInterfaceTest : GwtTestSpec({
         }
 
         When("Username is entered") {
-            document.findElement(By.id("username")).sendKeys("testuser")
+            document.locator("#username").fill("testuser")
 
             Then("A validation log should be printed") {
                 document shouldContainLog "Username validated"
@@ -287,11 +285,10 @@ class UserInterfaceTest : GwtTestSpec({
 - Java 11+
 - GWT 2.10.0+
 
-### kotest + selenium Test Library
+### kotest + playwright Test Library
 
-- ChromeDriver (downloaded automatically)
 - Kotest 6.0+
-- Selenium 4.27+
+- Playwright (Java) 1.x
   
 ## 🏗️ Architecture
 
