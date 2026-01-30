@@ -19,16 +19,15 @@ import org.gradle.api.tasks.testing.Test
  * - 기본 `org.docstr.gwt` 플러그인 적용
  * - GWT 테스트 모듈 컴파일을 위한 태스크 등록
  * - 테스트 소스를 포함하도록 개발 모드 설정
- * - 웹 서버 자동 시작/종료
+ * - Gradle Build Service를 이용한 웹 서버 자동 생명주기 관리
  * - Java 컴파일 UTF-8 인코딩 설정
  *
  * ## 태스크 실행 흐름
  * ```
  * test
- * ├── dependsOn: openWebServer
+ * ├── uses: WebServerService
  * ├── dependsOn: gwtTestCompile
  * │   └── dependsOn: gwtGenerateTestHtml
- * └── finalizedBy: closeWebServer
  *
  * gwtDevMode
  * └── dependsOn: gwtGenerateTestHtml
@@ -36,6 +35,7 @@ import org.gradle.api.tasks.testing.Test
  *
  * @see GwtTestCompileTask
  * @see GwtGenerateTestHtmlTask
+ * @see WebServerService
  */
 class GwtTestPlugin : Plugin<Project> {
 
@@ -46,7 +46,7 @@ class GwtTestPlugin : Plugin<Project> {
 
         registerGenerateHtmlTask(project, extension)
         registerGwtTestCompileTask(project)
-        registerWebServerTasks(project, extension)
+        registerWebServerService(project, extension)
 
         configureGwtDevMode(project)
         configureJavaCompile(project)
@@ -84,31 +84,29 @@ class GwtTestPlugin : Plugin<Project> {
         project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java)
 
     /**
-     * 웹 서버 시작/종료 태스크를 등록하고 구성합니다.
+     * 웹 서버 빌드 서비스를 등록하고 테스트 태스크가 이를 사용하도록 구성합니다.
+     *
+     * Gradle Build Service(`WebServerService`)를 사용하여 웹 서버의 생명주기를 관리합니다.
+     * 이를 통해 병렬 실행 지원 및 빌드 종료 시 안정적인 리소스 정리가 보장됩니다.
      */
-    private fun registerWebServerTasks(project: Project, extension: GwtPluginExtension) {
-        // Test 태스크에 gwt 확장 추가
+    private fun registerWebServerService(project: Project, extension: GwtPluginExtension) {
+        // 빌드 서비스 등록
+        val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
+            "gwtWebServer-${project.name}", // 프로젝트별 고유 이름 부여 (멀티 모듈 격리)
+            WebServerService::class.java
+        ) {
+            val warDir = extension.devMode.war.orElse(extension.war)
+            parameters.contentRoot.set(warDir)
+        }
         project.tasks.withType(Test::class.java).configureEach {
-            extensions.create("gwt", GwtTestTaskExtension::class.java)
-        }
-
-        // 웹 서버 시작 태스크
-        val openWebServerTask = project.tasks.register("openWebServer", WebServerTask::class.java) {
-            webserverPath.set(extension.war.map { it.asFile })
-
-            // Test 태스크의 webPort 설정과 연결
-            val testTaskProvider = project.tasks.named("test", Test::class.java)
-            val webPortProvider = testTaskProvider.flatMap { testTask ->
-                testTask.extensions.getByType(GwtTestTaskExtension::class.java).webPort
+            this.usesService(webServerServiceProvider)
+            val urlProvider = webServerServiceProvider.map { service ->
+                "http://127.0.0.1:${service.getPort()}/"
             }
-            webserverPort.set(webPortProvider)
-        }
-
-        // 웹 서버 종료 태스크
-        project.tasks.register("closeWebServer") {
-            doLast {
-                openWebServerTask.get().close()
-            }
+            // 시스템 프로퍼티로 URL 전달 (GWT 테스트 러너가 이를 읽어서 사용)
+            systemProperty("gwt.junit.remoteUrl", urlProvider)
+            // Ktor가 사용하는 Netty의 리소스 누수 탐지기 설정
+            systemProperty("io.netty.leakDetection.level", "PARANOID")
         }
     }
 
@@ -172,8 +170,7 @@ class GwtTestPlugin : Plugin<Project> {
     private fun configureTestTasks(project: Project) {
         project.tasks.withType(Test::class.java).configureEach {
             useJUnitPlatform()
-            dependsOn("openWebServer")
-            finalizedBy("closeWebServer")
+            dependsOn("gwtTestCompile")
         }
     }
 

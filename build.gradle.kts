@@ -9,7 +9,7 @@ plugins {
 
 allprojects {
     group = "dev.sayaya"
-    version = "2.2.7"
+    version = "2.2.7.1"
 
     repositories {
         gradlePluginPortal()
@@ -21,7 +21,7 @@ subprojects {
     apply(plugin = "kotlin")
 }
 dependencies {
-    implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$version")
+    implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:2.2.7")
     implementation("io.ktor:ktor-server-core:3.4.0")
     implementation("io.ktor:ktor-server-netty:3.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

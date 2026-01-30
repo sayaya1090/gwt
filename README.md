@@ -7,9 +7,8 @@ This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) de
 ### Gradle Plugin
 
 - **Full Lombok Support**: Automatically configures the `-javaagent` option so that the GWT compiler can process Lombok annotations.
-- **Automatic Test Web Server Management**: Automatically starts a Ktor-based embedded web server when running GWT tests and ensures that it is always shut down after tests complete (regardless of success or failure) to safely clean up resources.
+- **Automatic Test Web Server Management**: Uses **Gradle Build Service** to automatically manage the lifecycle of a Ktor-based embedded web server. It starts on demand when tests run and shuts down gracefully when the build finishes, ensuring efficient resource usage and no port conflicts.
 - **Automatic HTML Host File Generation**: Automatically generates the HTML host file required for each GWT test module, including support for the `rename-to` attribute, so you don’t have to manage these files manually.
-- **Simplified Test Configuration**: Manage GWT test–related settings (like web server ports) intuitively through a `gwt` extension on test tasks.
 - **Seamless Task Integration**: Simply running the Gradle `test` task automatically takes care of GWT compilation, server startup, test execution, and server shutdown.
 
 ### kotest + playwright Test Library (`gwt-test`)
@@ -62,9 +61,10 @@ gwt {
     war = file("src/main/webapp")
     devMode {
         modules = listOf("com.example.Test")
+        // The web server will serve files from this directory during tests
+        war = file("src/test/webapp") 
     }
 }
-
 ```
 
 ## Tasks
@@ -73,7 +73,7 @@ gwt {
 
 Compiles GWT test modules including both `main` and `test` sources.
 
-```bash
+```shell script
 ./gradlew gwtTestCompile
 ```
 
@@ -81,15 +81,15 @@ Compiles GWT test modules including both `main` and `test` sources.
 
 Starts GWT Dev Mode with access to test sources.
 
-```bash
+```shell script
 ./gradlew gwtDevMode
 ```
 
 ### `test`
 
-Runs tests (automatically depends on `gwtTestCompile`).
+Runs tests (automatically depends on `gwtTestCompile` and uses the Web Server Service).
 
-```bash
+```shell script
 ./gradlew test
 ```
 
@@ -128,7 +128,6 @@ gwt {
         modules = listOf("com.example.Test")
     }
 }
-
 ```
 
 ## Module Structure
@@ -301,17 +300,16 @@ dev.sayaya.gwt (GwtPlugin)
 └── dev.sayaya.gwt.test (GwtTestPlugin)
     ├── Applies org.docstr.gwt (base GWT plugin)
     ├── Registers GwtTestCompileTask
-    └── Manages web server automatically during tests
+    └── Registers WebServerService (Build Service)
 ```
 
 ### Task Dependency Flow
 
 ```
 test
-├── dependsOn: openWebServer
-│   └── dependsOn: gwtTestCompile
-│       └── dependsOn: gwtGenerateTestHtml
-└── finalizedBy: closeWebServer
+├── uses: WebServerService (Build Service)
+└── dependsOn: gwtTestCompile
+    └── dependsOn: gwtGenerateTestHtml
 
 gwtDevMode
 └── dependsOn: gwtGenerateTestHtml
@@ -324,9 +322,8 @@ war
 **Task Descriptions:**
 - `gwtGenerateTestHtml`: Automatically generates HTML host files for GWT test modules.
 - `gwtTestCompile`: Compiles GWT test modules (includes both main and test sources).
-- `openWebServer`: Starts a Ktor-based static file web server.
-- `closeWebServer`: Stops the web server.
 - `gwtDevMode`: Runs GWT Dev Mode including test sources.
+- WebServerService: A shared build service that hosts the static files. It starts automatically when `test` begins and stops when the build completes.
 
 ## Troubleshooting
 ### Cannot Find Module XML
@@ -339,14 +336,15 @@ war
 
 Check the following:
 1. Ensure Lombok is correctly added as an `annotationProcessor` dependency in `build.gradle.kts`:
-   ```kotlin
-   dependencies {
+```kotlin
+dependencies {
        // ...
        annotationProcessor("org.projectlombok:lombok:...")
    }
-   ```
+```
+
 2. Ensure that the `dev.sayaya.gwt.lombok` plugin, or the umbrella `dev.sayaya.gwt` plugin that includes it, is applied.
-If these settings are correct, Lombok should work without further configuration.
+   If these settings are correct, Lombok should work without further configuration.
 
 ### Out of Memory During Compilation
 **Error:** `java.lang.OutOfMemoryError: Java heap space`
@@ -358,13 +356,6 @@ gwt {
     maxHeapSize = "4096M"
 }
 ```
-
-### Web Server Does Not Shut Down
-**Symptom:** The port remains in use even after tests finish.
-**Solution:**
-1. Do not start or stop the server manually; the plugin manages it automatically.
-2. The server is shut down via `finalizedBy` even if tests fail.
-3. To shut it down manually, run: `./gradlew closeWebServer`
 
 
 ## License
@@ -381,7 +372,7 @@ This project is available under the terms specified in the project’s license f
 
 ### 2.2.7 (Latest)
 
-- ✨ Added automatic built-in web server management for GWT tests
+- ✨ Migrated web server management to Gradle **Build Service** for better lifecycle management and parallel execution support.
 - ✨ Added automatic HTML host file generation (with `rename-to` support)
 - ✨ Added Lombok Java Agent auto-configuration
 - 📚 Completed KDoc documentation for all public APIs

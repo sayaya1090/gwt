@@ -32,17 +32,14 @@ class GwtPluginIntegrationTest : DescribeSpec({
      * 8. processTestResources - 테스트 리소스 처리
      * 9. testClasses - 테스트 클래스 준비 완료
      * 10. gwtTestCompile - GWT 테스트 모듈 컴파일
-     * 11. openWebServer - 웹서버 시작 (테스트용)
-     * 12. test - JUnit 테스트 실행 (+ GWT 코드서버 시작)
-     * 13. closeWebServer - 웹서버 종료
-     * 14. closeGwtCodeServer - GWT 코드서버 종료
-     * 15. check - 완료
-     * 16. build - 완료
+     * 11. test - JUnit 테스트 실행 (WebServerService 자동 시작/종료)
+     * 12. check - 완료
+     * 13. build - 완료
      *
      * ## 핵심 의존성
      * - war → gwtCompile: WAR 파일 생성 전에 GWT 컴파일 완료 필요
      * - test → gwtTestCompile: 테스트 실행 전에 GWT 테스트 모듈 컴파일 필요
-     * - test → openWebServer: 테스트 실행 전에 웹서버 시작 필요
+     * - test uses WebServerService: 테스트 실행 중 웹서버 서비스 사용 (자동 시작)
      * - gwtCompile mustRunAfter test: 충돌 방지를 위한 순서 제약
      * - jar.enabled = false: WAR 플러그인 사용 시 JAR 불필요
      */
