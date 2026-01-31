@@ -56,8 +56,8 @@ class GwtTestSpecTest : GwtTestSpec({
         """.trimIndent())
     }
     beforeTest {
-        document.clearConsoleLogs()
-        document.reload()
+        page.clearConsoleLogs()
+        page.reload()
     }
     afterSpec {
         File("build/test-resources/GwtTestSpecTest").deleteRecursively()
@@ -66,14 +66,14 @@ class GwtTestSpecTest : GwtTestSpec({
     Given("GwtTestSpec을 상속하여 테스트를 실행할 때") {
         When("페이지가 정상적으로 로드되면") {
             Then("페이지 구성 요소에 접근할 수 있다") {
-                document.title() shouldBe "GwtTestSpec Test"
-                val h1Element = document.locator("h1")
+                page.title() shouldBe "GwtTestSpec Test"
+                val h1Element = page.locator("h1")
                 h1Element.textContent() shouldBe "GwtTestSpec Test Page"
             }
         }
 
         When("로그를 가져오면") {
-            val logs = document.getConsoleLogs()
+            val logs = page.getConsoleLogs()
 
             Then("따옴표로 감싸진 일반 로그를 파싱할 수 있어야 한다") {
                 logs shouldContain "정상 로그"
@@ -103,20 +103,20 @@ class GwtTestSpecTest : GwtTestSpec({
 
             Then("shouldContainLog가 실패하면 AssertionError를 던져야 한다") {
                 shouldThrow<AssertionError> {
-                    document shouldContainLog "이것은 실패해야 합니다"
+                    page shouldContainLog "이것은 실패해야 합니다"
                 }
             }
 
             Then("shouldNotContainLog가 실패하면 AssertionError를 던져야 한다") {
                 shouldThrow<AssertionError> {
-                    document shouldNotContainLog "정상 로그"
+                    page shouldNotContainLog "정상 로그"
                 }
             }
         }
 
         When("따옴표가 없는 로그를 검증하면") {
             Then("원본 형식의 로그를 찾을 수 있어야 한다") {
-                val logs = document.getConsoleLogs()
+                val logs = page.getConsoleLogs()
 
                 // 객체, 숫자 등은 브라우저가 문자열로 변환한 형태로 저장됨
                 // 예: "[object Object]", "12345", "true", "null", "undefined" 등
@@ -128,11 +128,11 @@ class GwtTestSpecTest : GwtTestSpec({
 
         When("콘솔 로그를 직접 관리하면") {
             beforeTest {
-                document.reload()
+                page.reload()
             }
 
             Then("getConsoleLogs()로 모든 로그를 가져올 수 있다") {
-                val logs = document.getConsoleLogs()
+                val logs = page.getConsoleLogs()
                 logs shouldContain "정상 로그"
                 logs shouldContain "특수문자: !@#\$%"
                 logs shouldContain 12345
@@ -140,8 +140,8 @@ class GwtTestSpecTest : GwtTestSpec({
             }
 
             Then("clearConsoleLogs()로 로그를 지울 수 있다") {
-                document.clearConsoleLogs()
-                document.getConsoleLogs().shouldBeEmpty()
+                page.clearConsoleLogs()
+                page.getConsoleLogs().shouldBeEmpty()
             }
         }
     }

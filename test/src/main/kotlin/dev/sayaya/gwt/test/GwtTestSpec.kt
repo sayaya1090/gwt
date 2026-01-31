@@ -7,6 +7,7 @@ import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserType
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
+import com.microsoft.playwright.options.LoadState
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -55,7 +56,7 @@ open class GwtTestSpec(
      */
     private lateinit var playwright: Playwright
     private lateinit var browser: Browser
-    lateinit var document: Page
+    lateinit var page: Page
     private val consoleLogs = CopyOnWriteArrayList<Any?>()
     init {
         body()
@@ -66,10 +67,10 @@ open class GwtTestSpec(
                 BrowserType.LaunchOptions().setHeadless(true)
             )
 
-            document = browser.newPage()
+            page = browser.newPage()
 
             // 브라우저 콘솔 로그 수집
-            document.onConsoleMessage { msg ->
+            page.onConsoleMessage { msg ->
                 // msg.text()는 사람이 읽기 좋은 문자열이지만, 객체/숫자/불리언 등을 구분하려면 args를 함께 본다.
                 val args = msg.args()
                 if (args.isNullOrEmpty()) {
@@ -84,10 +85,11 @@ open class GwtTestSpec(
                 }
             }
             loadHtmlFile()
+            page.waitForLoadState(LoadState.NETWORKIDLE)
         }
 
         afterSpec {
-            runCatching { document.close() }
+            runCatching { page.close() }
             runCatching { browser.close() }
             runCatching { playwright.close() }
         }
@@ -110,7 +112,7 @@ open class GwtTestSpec(
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
-        document.navigate("file://${html.absolutePath}")
+        page.navigate("file://${html.absolutePath}")
     }
 
     /**

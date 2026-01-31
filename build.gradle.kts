@@ -9,7 +9,7 @@ plugins {
 
 allprojects {
     group = "dev.sayaya"
-    version = "2.2.7.1"
+    version = "2.2.7.3"
 
     repositories {
         gradlePluginPortal()
@@ -40,7 +40,7 @@ gradlePlugin {
             version = project.version
             displayName = "GWT Gradle Plugin"
             description = "Extends org.docstr.gwt plugin with automatic Lombok support, built-in web server management for tests, and HTML host file generation for GWT development"
-            tags = listOf("gwt", "java", "web", "lombok", "test", "selenium")
+            tags = listOf("gwt", "java", "web", "lombok", "test", "playwright")
         }
         register("gwtLombokPlugin") {
             id = "${project.group}.gwt.lombok"
@@ -55,8 +55,8 @@ gradlePlugin {
             implementationClass = "${project.group}.gwt.GwtTestPlugin"
             version = project.version
             displayName = "GWT Test Plugin"
-            description = "Simplifies GWT testing with automatic web server lifecycle management, HTML test file generation, and kotest+selenium integration"
-            tags = listOf("gwt", "java", "test", "selenium", "testing", "kotest")
+            description = "Simplifies GWT testing with automatic web server lifecycle management, HTML test file generation, and kotest+playwright integration"
+            tags = listOf("gwt", "java", "test", "playwright", "testing", "kotest")
         }
     }
 }
