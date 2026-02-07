@@ -28,7 +28,7 @@ Add the plugin to the `plugins` block in your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("dev.sayaya.gwt") version "2.2.7"
+    id("dev.sayaya.gwt") version "2.2.9"
 }
 ```
 
@@ -36,7 +36,7 @@ plugins {
 
 ```groovy
 plugins {
-    id 'dev.sayaya.gwt' version '2.2.7'
+    id 'dev.sayaya.gwt' version '2.2.9'
 }
 ```
 
@@ -46,7 +46,7 @@ If you want to write browser tests using kotest + playwright:
 
 ```kotlin
 dependencies {
-    testImplementation("dev.sayaya:gwt-test:2.2.7")
+    testImplementation("dev.sayaya:gwt-test:2.2.9")
 }
 ```
 
@@ -100,7 +100,7 @@ Runs tests (automatically depends on `gwtTestCompile` and uses the Web Server Se
 ```kotlin
 plugins {
     kotlin("jvm") version "2.1.0"
-    id("dev.sayaya.gwt") version "2.2.7"
+    id("dev.sayaya.gwt") version "2.2.9"
     id("war")
 }
 
@@ -370,7 +370,7 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### 2.2.7 (Latest)
+### 2.2.9 (Latest)
 
 - ✨ Migrated web server management to Gradle **Build Service** for better lifecycle management and parallel execution support.
 - ✨ Added automatic HTML host file generation (with `rename-to` support)

@@ -18,7 +18,7 @@ import org.gradle.api.Project
  * ## 사용 예시
  * ```kotlin
  * plugins {
- *     id("dev.sayaya.gwt") version "2.2.7"
+ *     id("dev.sayaya.gwt") version "2.2.9"
  * }
  * ```
  *

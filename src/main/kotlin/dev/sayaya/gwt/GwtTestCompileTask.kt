@@ -43,9 +43,7 @@ import javax.inject.Inject
  * @see GwtTestPlugin
  */
 @CacheableTask
-abstract class GwtTestCompileTask @Inject constructor(
-    objects: ObjectFactory
-) : GwtCompileTask(objects) {
+abstract class GwtTestCompileTask @Inject constructor() : GwtCompileTask() {
 
     init {
         group = "GWT"
