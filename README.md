@@ -28,7 +28,7 @@ Add the plugin to the `plugins` block in your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("dev.sayaya.gwt") version "2.2.9"
+    id("dev.sayaya.gwt") version "2.2.9.1"
 }
 ```
 
@@ -36,7 +36,7 @@ plugins {
 
 ```groovy
 plugins {
-    id 'dev.sayaya.gwt' version '2.2.9'
+    id 'dev.sayaya.gwt' version '2.2.9.1'
 }
 ```
 
@@ -46,7 +46,7 @@ If you want to write browser tests using kotest + playwright:
 
 ```kotlin
 dependencies {
-    testImplementation("dev.sayaya:gwt-test:2.2.9")
+    testImplementation("dev.sayaya:gwt-test:2.2.9.1")
 }
 ```
 
@@ -56,7 +56,7 @@ The plugin extends the base GWT plugin configuration. Configure GWT in the `gwt`
 
 ```kotlin
 gwt {
-    gwtVersion = "2.12.2"
+    gwtVersion = "2.13.0"
     modules = listOf("com.example.App")
     war = file("src/main/webapp")
     devMode {
@@ -99,8 +99,8 @@ Runs tests (automatically depends on `gwtTestCompile` and uses the Web Server Se
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.1.0"
-    id("dev.sayaya.gwt") version "2.2.9"
+    kotlin("jvm") version "2.3.20"
+    id("dev.sayaya.gwt") version "2.2.9.1"
     id("war")
 }
 
@@ -117,11 +117,11 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
     // Tests
-    testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
+    testImplementation("io.kotest:kotest-runner-junit5:6.1.10")
 }
 
 gwt {
-    gwtVersion = "2.12.2"
+    gwtVersion = "2.13.0"
     modules = listOf("com.example.App")
     war = file("src/main/webapp")
     devMode {
@@ -210,10 +210,10 @@ import dev.sayaya.gwt.test.GwtHtml
 class MenuTest : GwtTestSpec({
     Given("the menu is loaded") {
         When("the menu button is clicked") {
-            document.locator("#menu-button").click()
+            page.locator("#menu-button").click()
 
             Then("the menu should be visible") {
-                document shouldContainLog "Menu opened"
+                page shouldContainLog "Menu opened"
             }
         }
     }
@@ -226,16 +226,16 @@ class MenuTest : GwtTestSpec({
 
 ```kotlin
 // Check if a specific text is contained in the logs (logs are automatically cleared afterward)
-document shouldContainLog "Expected message"
+page shouldContainLog "Expected message"
 
 // Check that a specific text is not present in the logs (logs are automatically cleared afterward)
-document shouldNotContainLog "Error message"
+page shouldNotContainLog "Error message"
 
 // Retrieve all console logs
-val logs: List<String> = document.getConsoleLogs()
+val logs: List<String> = page.getConsoleLogs()
 
 // Manually clear console logs
-document.clearConsoleLogs()
+page.clearConsoleLogs()
 ```
 
 #### Configuration Options
@@ -257,18 +257,18 @@ import dev.sayaya.gwt.test.GwtHtml
 class UserInterfaceTest : GwtTestSpec({
     Given("The page is loaded") {
         When("Login button is clicked") {
-            document.locator("#login-btn").click()
+            page.locator("#login-btn").click()
 
             Then("Login dialog should be displayed") {
-                document shouldContainLog "Login dialog opened"
+                page shouldContainLog "Login dialog opened"
             }
         }
 
         When("Username is entered") {
-            document.locator("#username").fill("testuser")
+            page.locator("#username").fill("testuser")
 
             Then("A validation log should be printed") {
-                document shouldContainLog "Username validated"
+                page shouldContainLog "Username validated"
             }
         }
     }
@@ -370,7 +370,7 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### 2.2.9 (Latest)
+### 2.2.9.1 (Latest)
 
 - ✨ Migrated web server management to Gradle **Build Service** for better lifecycle management and parallel execution support.
 - ✨ Added automatic HTML host file generation (with `rename-to` support)

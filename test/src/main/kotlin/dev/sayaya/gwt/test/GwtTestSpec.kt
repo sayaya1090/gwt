@@ -30,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  *     Given("모듈이 로드되면") {
  *         When("버튼을 클릭하면") {
  *             Then("로그가 출력되어야 한다") {
- *                 document shouldContainLog "Expected message"
+ *                 page shouldContainLog "Expected message"
  *             }
  *         }
  *     }

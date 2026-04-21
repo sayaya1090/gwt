@@ -12,11 +12,11 @@ repositories {
 
 dependencies {
     // Playwright
-    api("com.microsoft.playwright:playwright:1.57.0")
+    api("com.microsoft.playwright:playwright:1.59.1")
 
     // Kotest
-    api("io.kotest:kotest-runner-junit5:6.1.1")
-    api("io.kotest:kotest-assertions-core:6.1.1")
+    api("io.kotest:kotest-runner-junit5:6.1.10")
+    api("io.kotest:kotest-assertions-core:6.1.10")
 
     // Kotlin
     api(kotlin("stdlib"))
