@@ -109,16 +109,27 @@ open class GwtTestSpec(
      * 없으면 로컬 파일 경로(file://)를 사용합니다.
      */
     internal fun loadHtmlFile() {
+        val url = generateUrl()
+        if (::page.isInitialized) {
+            page.navigate(url)
+        }
+    }
+
+    /**
+     * 로드할 최종 URL을 생성합니다.
+     * 
+     * @return 생성된 URL 문자열
+     */
+    internal fun generateUrl(): String {
         val html = File(htmlPath)
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
         val remoteUrl = System.getProperty("gwt.junit.remoteUrl")
-        if (remoteUrl != null && remoteUrl.isNotEmpty()) {
-            val url = if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
-            page.navigate(url)
+        return if (remoteUrl != null && remoteUrl.isNotEmpty()) {
+            if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
         } else {
-            page.navigate("file://${html.absolutePath}")
+            "file://${html.absolutePath}"
         }
     }
 
