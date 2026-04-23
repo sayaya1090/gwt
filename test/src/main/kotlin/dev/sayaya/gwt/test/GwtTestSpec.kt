@@ -105,14 +105,21 @@ open class GwtTestSpec(
 
     /**
      * HTML 파일을 로드합니다.
-     * 파일 경로가 상대 경로인 경우 절대 경로로 변환하여 로드합니다.
+     * 플러그인에 의해 설정된 웹 서버 URL(gwt.junit.remoteUrl)이 있으면 이를 사용하고,
+     * 없으면 로컬 파일 경로(file://)를 사용합니다.
      */
     internal fun loadHtmlFile() {
         val html = File(htmlPath)
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
-        page.navigate("file://${html.absolutePath}")
+        val remoteUrl = System.getProperty("gwt.junit.remoteUrl")
+        if (remoteUrl != null && remoteUrl.isNotEmpty()) {
+            val url = if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
+            page.navigate(url)
+        } else {
+            page.navigate("file://${html.absolutePath}")
+        }
     }
 
     /**

@@ -13,9 +13,12 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.w3c.dom.Document
 import java.io.File
 import java.io.IOException
@@ -54,6 +57,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  * @see GwtTestCompileTask
  * @see GwtTestPlugin
  */
+@DisableCachingByDefault(because = "HTML generation is fast and depends on external GWT module XML files that are not easily tracked as task inputs")
 abstract class GwtGenerateTestHtmlTask : DefaultTask() {
 
     /**
@@ -81,6 +85,7 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
      * 템플릿이 지정되지 않으면 기본 템플릿을 사용합니다.
      */
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:Optional
     abstract val htmlTemplate: RegularFileProperty
 

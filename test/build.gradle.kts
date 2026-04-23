@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     // Playwright
-    api("com.microsoft.playwright:playwright:1.59.1")
+    api("com.microsoft.playwright:playwright:1.59.0")
 
     // Kotest
     api("io.kotest:kotest-runner-junit5:6.1.10")
