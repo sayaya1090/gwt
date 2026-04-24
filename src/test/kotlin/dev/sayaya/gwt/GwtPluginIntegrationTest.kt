@@ -54,7 +54,6 @@ class GwtPluginIntegrationTest : DescribeSpec({
             .withArguments("build", "--stacktrace", "--info")
 
         val result = runner.build()
-        println(result.output)
         it("gwtCompile이 성공해야 함") {
             result.task(":gwtCompile")?.outcome shouldBe TaskOutcome.SUCCESS
         }

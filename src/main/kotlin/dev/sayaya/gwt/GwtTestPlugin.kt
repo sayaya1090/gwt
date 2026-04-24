@@ -116,11 +116,13 @@ class GwtTestPlugin : Plugin<Project> {
 
         project.tasks.withType(Test::class.java).configureEach {
             this.usesService(webServerServiceProvider)
-            val urlProvider = webServerServiceProvider.map { service ->
-                "http://127.0.0.1:${service.getPort()}/"
-            }
-            // 시스템 프로퍼티로 URL 전달 (GWT 테스트 러너가 이를 읽어서 사용)
-            systemProperty("gwt.junit.remoteUrl", urlProvider)
+            
+            // JVM 인자 제공자를 통해 지연 평가 구현 (결함 해결)
+            jvmArgumentProviders.add(org.gradle.process.CommandLineArgumentProvider {
+                val service = webServerServiceProvider.get()
+                listOf("-Dgwt.junit.remoteUrl=http://127.0.0.1:${service.getPort()}/")
+            })
+
             // Ktor가 사용하는 Netty의 리소스 누수 탐지기 설정
             systemProperty("io.netty.leakDetection.level", "PARANOID")
         }

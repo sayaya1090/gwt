@@ -1,4 +1,3 @@
-
 package dev.sayaya.gwt
 
 import org.gradle.api.DefaultTask
@@ -54,6 +53,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  * @see GwtTestCompileTask
  * @see GwtTestPlugin
  */
+@org.gradle.api.tasks.CacheableTask
 abstract class GwtGenerateTestHtmlTask : DefaultTask() {
 
     /**
@@ -81,6 +81,7 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
      * 템플릿이 지정되지 않으면 기본 템플릿을 사용합니다.
      */
     @get:InputFile
+    @get:org.gradle.api.tasks.PathSensitive(org.gradle.api.tasks.PathSensitivity.RELATIVE)
     @get:Optional
     abstract val htmlTemplate: RegularFileProperty
 

@@ -6,8 +6,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testfixtures.ProjectBuilder
@@ -83,9 +81,16 @@ class GwtTestPluginTest : DescribeSpec({
             }
             it("'test' 태스크에 시스템 프로퍼티가 설정되어야 한다") {
                 val testTask = project.tasks.getByName("test") as Test
-                val systemProperties = testTask.systemProperties
+                
+                // 1. gwt.junit.remoteUrl은 jvmArgumentProviders를 통해 주입됨
+                val argumentProviders = testTask.jvmArgumentProviders
+                val hasRemoteUrl = argumentProviders.any { provider ->
+                    provider.asArguments().any { it.startsWith("-Dgwt.junit.remoteUrl=") }
+                }
+                hasRemoteUrl shouldBe true
 
-                systemProperties.containsKey("gwt.junit.remoteUrl") shouldBe true
+                // 2. 나머지는 기존처럼 systemProperties에서 확인
+                val systemProperties = testTask.systemProperties
                 systemProperties.containsKey("io.netty.leakDetection.level") shouldBe true
                 systemProperties["io.netty.leakDetection.level"] shouldBe "PARANOID"
             }

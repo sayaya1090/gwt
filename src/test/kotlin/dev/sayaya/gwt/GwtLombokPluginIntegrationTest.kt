@@ -23,7 +23,6 @@ class GwtLombokPluginIntegrationTest : StringSpec({
 
         val result = runner.build()
 
-        println(result.output)
         // 검증: 빌드 결과 확인
         result.output shouldContain "BUILD SUCCESSFUL"
         result.task(":gwtCompile")?.outcome shouldBe TaskOutcome.SUCCESS
