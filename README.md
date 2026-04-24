@@ -377,7 +377,7 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### 2.2.9.1-TEMP4 (Latest)
+### 2.2.9.5 (Latest)
 - ✨ **Custom Web Port Support**: Added `gwt.test.webPort` property to allow manual port assignment in multi-module environments.
 - 🔗 **Auto-Injection**: Port settings are automatically propagated to `gwt.junit.remoteUrl` system property.
 - 📁 **Relative Path Support**: Refactored `GwtTestSpec` to use web server relative paths instead of absolute file system paths.
