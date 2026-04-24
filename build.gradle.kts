@@ -11,7 +11,7 @@ val docstrGwtPluginVersion = "2.2.9"
 
 allprojects {
     group = "dev.sayaya"
-    version = "2.2.9.1-TEMP3"
+    version = "2.2.9.1-TEMP4"
 
     repositories {
         gradlePluginPortal()

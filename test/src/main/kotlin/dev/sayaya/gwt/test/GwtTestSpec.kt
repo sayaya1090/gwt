@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  *
  * ## 사용 예시
  * ```kotlin
- * @GwtHtml("src/test/webapp/test.html")
+ * @GwtHtml("test.html")
  * class MyTest : GwtTestSpec({
  *     Given("모듈이 로드되면") {
  *         When("버튼을 클릭하면") {
@@ -121,12 +121,11 @@ open class GwtTestSpec(
      * @return 생성된 HTTP URL 문자열
      */
     internal fun generateUrl(): String {
-        val html = File(htmlPath)
-        if (!html.exists()) {
-            throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
-        }
         val remoteUrl = System.getProperty("gwt.junit.remoteUrl") ?: "http://localhost:8080/"
-        return if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
+        val baseUrl = if (remoteUrl.endsWith("/")) remoteUrl else "$remoteUrl/"
+        // htmlPath가 /로 시작하면 제거하여baseUrl과 중복 방지
+        val path = if (htmlPath.startsWith("/")) htmlPath.substring(1) else htmlPath
+        return baseUrl + path
     }
 
     /**
