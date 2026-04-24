@@ -85,18 +85,22 @@ class GwtTestPlugin : Plugin<Project> {
 
     /**
      * 웹 서버 빌드 서비스를 등록하고 테스트 태스크가 이를 사용하도록 구성합니다.
-     *
-     * Gradle Build Service(`WebServerService`)를 사용하여 웹 서버의 생명주기를 관리합니다.
-     * 이를 통해 병렬 실행 지원 및 빌드 종료 시 안정적인 리소스 정리가 보장됩니다.
      */
     private fun registerWebServerService(project: Project, extension: GwtPluginExtension) {
+        val gwtTestCompile = project.tasks.named("gwtTestCompile", GwtTestCompileTask::class.java)
+
         // 빌드 서비스 등록
         val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
-            "gwtWebServer-${project.name}", // 프로젝트별 고유 이름 부여 (멀티 모듈 격리)
+            "gwtWebServer-${project.name}",
             WebServerService::class.java
         ) {
+            // 1. 사용자가 설정한 war 디렉토리를 추가 (소스 리소스)
             val warDir = extension.devMode.war.orElse(extension.war)
-            parameters.contentRoot.set(warDir)
+            parameters.contentRoot.from(warDir)
+
+            // 2. GWT 컴파일러의 실제 출력 디렉토리를 추가 (컴파일된 JS)
+            // GwtTestCompileTask의 war 프로퍼티가 가리키는 곳이 실제 번들이 생성되는 위치임
+            parameters.contentRoot.from(gwtTestCompile.flatMap { it.war })
         }
         project.tasks.withType(Test::class.java).configureEach {
             this.usesService(webServerServiceProvider)

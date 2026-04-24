@@ -105,14 +105,29 @@ open class GwtTestSpec(
 
     /**
      * HTML 파일을 로드합니다.
-     * 파일 경로가 상대 경로인 경우 절대 경로로 변환하여 로드합니다.
      */
     internal fun loadHtmlFile() {
+        val url = generateUrl()
+        if (::page.isInitialized) {
+            page.navigate(url)
+        }
+    }
+
+    /**
+     * 테스트할 HTML URL을 생성합니다.
+     * 
+     * 시스템 프로퍼티 `gwt.junit.remoteUrl`을 우선적으로 사용하며,
+     * 설정되지 않은 경우 기본값으로 `http://localhost:8080/`을 사용합니다.
+     * 
+     * @return 생성된 HTTP URL 문자열
+     */
+    internal fun generateUrl(): String {
         val html = File(htmlPath)
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
-        page.navigate("file://${html.absolutePath}")
+        val remoteUrl = System.getProperty("gwt.junit.remoteUrl") ?: "http://localhost:8080/"
+        return if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
     }
 
     /**
