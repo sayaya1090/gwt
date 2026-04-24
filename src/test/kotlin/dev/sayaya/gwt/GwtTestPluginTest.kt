@@ -6,6 +6,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testfixtures.ProjectBuilder
@@ -96,6 +98,19 @@ class GwtTestPluginTest : DescribeSpec({
                 // beforeEach에서 설정한 값
                 val expectedPath = project.file("src/test/webapp")
                 parameters.contentRoot.files shouldContain expectedPath
+            }
+
+            it("WebServerService의 port는 extension.webPort 설정을 따라야 한다") {
+                val gwtExtension = project.extensions.getByType(GwtPluginExtension::class.java)
+                val testExtension = (gwtExtension as org.gradle.api.plugins.ExtensionAware).extensions.getByType(GwtTestTaskExtension::class.java)
+                val targetPort = 18080
+                testExtension.webPort.set(targetPort)
+
+                val serviceName = "gwtWebServer-test"
+                val registration = project.gradle.sharedServices.registrations.getByName(serviceName)
+                val parameters = registration.parameters as WebServerParameters
+
+                parameters.port.get() shouldBe targetPort
             }
         }
         context("'war' 플러그인과 함께 적용 시") {

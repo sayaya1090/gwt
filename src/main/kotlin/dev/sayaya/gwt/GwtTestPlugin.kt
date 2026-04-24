@@ -6,6 +6,8 @@ import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -43,6 +45,8 @@ class GwtTestPlugin : Plugin<Project> {
         applyRequiredPlugins(project)
 
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
+        // 1. GwtPluginExtension에 GwtTestTaskExtension 속성 추가 (ExtensionAware 활용)
+        (extension as org.gradle.api.plugins.ExtensionAware).extensions.create(GwtTestTaskExtension::class.java, "test", GwtTestTaskExtension::class.java)
 
         registerGenerateHtmlTask(project, extension)
         registerGwtTestCompileTask(project)
@@ -82,22 +86,29 @@ class GwtTestPlugin : Plugin<Project> {
      */
     private fun registerGwtTestCompileTask(project: Project): TaskProvider<GwtTestCompileTask> =
         project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java)
+
     /**
      * 웹 서버 빌드 서비스를 등록하고 테스트 태스크가 이를 사용하도록 구성합니다.
      */
     private fun registerWebServerService(project: Project, extension: GwtPluginExtension) {
         val gwtTestCompile = project.tasks.named("gwtTestCompile", GwtTestCompileTask::class.java)
+        val testExtension = (extension as org.gradle.api.plugins.ExtensionAware).extensions.findByType(GwtTestTaskExtension::class.java)
 
         // 빌드 서비스 등록
         val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
             "gwtWebServer-${project.name}",
             WebServerService::class.java
         ) {
-            // 1. 사용자가 설정한 war 디렉토리 추가 (소스 리소스)
+            // 1. 포트 설정 전파 (결함 1번 해결)
+            testExtension?.let {
+                parameters.port.set(it.webPort)
+            }
+
+            // 2. 사용자가 설정한 war 디렉토리 추가 (소스 리소스)
             val warDir = extension.devMode.war.orElse(extension.war)
             parameters.contentRoot.from(warDir)
 
-            // 2. GWT 컴파일러의 실제 출력 디렉토리를 명시적으로 추가 (번들 JS)
+            // 3. GWT 컴파일러의 실제 출력 디렉토리를 명시적으로 추가 (번들 JS 및 복사된 테스트 리소스 포함)
             parameters.contentRoot.from(gwtTestCompile.flatMap { it.war })
         }
 
