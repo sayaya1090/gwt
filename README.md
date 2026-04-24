@@ -206,7 +206,7 @@ Using the `gwt-test` library, you can easily write browser tests with kotest + p
 import dev.sayaya.gwt.test.GwtTestSpec
 import dev.sayaya.gwt.test.GwtHtml
 
-@GwtHtml("src/test/webapp/test.html")  // HTML file under test
+@GwtHtml("test.html")  // Relative path from web server root
 class MenuTest : GwtTestSpec({
     Given("the menu is loaded") {
         When("the menu button is clicked") {
@@ -241,7 +241,14 @@ page.clearConsoleLogs()
 #### Configuration Options
 
 ```kotlin
-@GwtHtml("src/test/webapp/test.html")  // HTML file path
+// Multi-module project: assign specific ports to avoid conflicts
+gwt {
+    test {
+        webPort.set(18080)
+    }
+}
+
+@GwtHtml("test.html")  // HTML file name (relative path)
 class MyTest : GwtTestSpec({
     // Test logic...
 })
@@ -253,7 +260,7 @@ class MyTest : GwtTestSpec({
 import dev.sayaya.gwt.test.GwtTestSpec
 import dev.sayaya.gwt.test.GwtHtml
 
-@GwtHtml("src/test/webapp/test.html")
+@GwtHtml("login.html")
 class UserInterfaceTest : GwtTestSpec({
     Given("The page is loaded") {
         When("Login button is clicked") {
@@ -370,11 +377,11 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### 2.2.9.1 (Latest)
+### 2.2.9.1-TEMP4 (Latest)
+- ✨ **Custom Web Port Support**: Added `gwt.test.webPort` property to allow manual port assignment in multi-module environments.
+- 🔗 **Auto-Injection**: Port settings are automatically propagated to `gwt.junit.remoteUrl` system property.
+- 📁 **Relative Path Support**: Refactored `GwtTestSpec` to use web server relative paths instead of absolute file system paths.
+- 📟 **Console Log Fix**: Restored missing browser console log collection logic.
+- 🔧 **Gradle 9.4+ Compatibility**: Confirmed support for the latest Gradle versions and Java 25.
 
-- ✨ Migrated web server management to Gradle **Build Service** for better lifecycle management and parallel execution support.
-- ✨ Added automatic HTML host file generation (with `rename-to` support)
-- ✨ Added Lombok Java Agent auto-configuration
-- 📚 Completed KDoc documentation for all public APIs
-- ✅ Achieved comprehensive test coverage
-- 🔧 Refactored using configuration helper methods
+### 2.2.9.1
