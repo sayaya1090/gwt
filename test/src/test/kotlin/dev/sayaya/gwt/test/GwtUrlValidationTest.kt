@@ -5,19 +5,11 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import java.io.File
 
-@GwtHtml("build/test-resources/GwtUrlValidationTest/test.html")
+@GwtHtml("test.html")
 private class DummySpec : GwtTestSpec({})
 
 class GwtUrlValidationTest : BehaviorSpec({
-    val mockHtml = File("build/test-resources/GwtUrlValidationTest/test.html")
-    
-    beforeSpec {
-        mockHtml.parentFile.mkdirs()
-        mockHtml.writeText("<html></html>")
-    }
-
     afterSpec {
-        File("build/test-resources/GwtUrlValidationTest").deleteRecursively()
         System.clearProperty("gwt.junit.remoteUrl")
     }
 

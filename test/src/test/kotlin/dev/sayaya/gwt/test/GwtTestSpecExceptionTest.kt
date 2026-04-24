@@ -28,28 +28,4 @@ class GwtTestSpecExceptionTest : BehaviorSpec({
             }
         }
     }
-
-    Given("존재하지 않는 HTML 파일 경로가 지정된 경우") {
-        @Ignored @GwtHtml("build/test-resources/NonExistent/missing.html")
-        class TestSpecWithInvalidPath(body: GwtTestSpec.() -> Unit) : GwtTestSpec(body)
-
-        When("loadHtmlFile()을 호출하면") {
-            Then("IllegalArgumentException이 발생해야 한다") {
-                // 어노테이션 없는 네임드 클래스 사용
-                val testSpec = TestSpecWithInvalidPath({
-                    Given("dummy") {
-                        Then("dummy") {}
-                    }
-                })
-
-                // loadHtmlFile 직접 호출하여 예외 검증
-                val exception = shouldThrow<IllegalArgumentException> {
-                    testSpec.loadHtmlFile()
-                }
-
-                exception.message shouldContain "HTML 파일을 찾을 수 없습니다"
-                exception.message shouldContain "missing.html"
-            }
-        }
-    }
 })

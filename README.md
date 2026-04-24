@@ -1,4 +1,4 @@
-# GWT Gradle Plugin
+zjalt/# GWT Gradle Plugin
 
 This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) development in a Gradle environment, with a special focus on testing and Lombok integration. It extends the existing `org.docstr.gwt` plugin and automates repetitive setup and execution steps required for GWT tests.
 

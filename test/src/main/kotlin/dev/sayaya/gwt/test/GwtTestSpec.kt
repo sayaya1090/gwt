@@ -11,7 +11,6 @@ import com.microsoft.playwright.options.LoadState
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
-import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -62,27 +61,30 @@ open class GwtTestSpec(
         body()
 
         beforeSpec {
-            println("[GwtTestSpec] Initializing Playwright...")
             playwright = Playwright.create()
-            println("[GwtTestSpec] Launching Chromium Browser (headless)...")
             browser = playwright.chromium().launch(
                 BrowserType.LaunchOptions().setHeadless(true)
             )
 
-            println("[GwtTestSpec] Creating new page...")
             page = browser.newPage()
 
             // 브라우저 콘솔 로그 수집
             page.onConsoleMessage { msg ->
-                // ... (생략된 로그 수집 로직) ...
+                // msg.text()는 사람이 읽기 좋은 문자열이지만, 객체/숫자/불리언 등을 구분하려면 args를 함께 본다.
+                val args = msg.args()
+                if (args.isNullOrEmpty()) {
+                    consoleLogs.add(parseMaybeJson(msg.text()))
+                } else if (args.size == 1) {
+                    consoleLogs.add(runCatching { args[0].jsonValue() }.getOrElse { msg.text() })
+                } else {
+                    val values = args.map { handle ->
+                        runCatching { handle.jsonValue() }.getOrElse { handle.toString() }
+                    }
+                    consoleLogs.add(values)
+                }
             }
-            
-            println("[GwtTestSpec] Loading HTML file...")
             loadHtmlFile()
-            
-            println("[GwtTestSpec] Waiting for Network Idle...")
             page.waitForLoadState(LoadState.NETWORKIDLE)
-            println("[GwtTestSpec] Initialization Complete.")
         }
 
         afterSpec {
@@ -105,11 +107,7 @@ open class GwtTestSpec(
      */
     internal fun loadHtmlFile() {
         val url = generateUrl()
-        if (::page.isInitialized) {
-            page.setDefaultNavigationTimeout(30000.0) // 30초 타임아웃 추가
-            page.setDefaultTimeout(30000.0)
-            page.navigate(url)
-        }
+        if (::page.isInitialized) page.navigate(url)
     }
 
     /**

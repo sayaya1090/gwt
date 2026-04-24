@@ -11,13 +11,16 @@ import java.io.File
  *
  * 이 클래스는 GwtTestSpec을 상속받아 그 기능을 직접 사용하며 검증합니다.
  */
-@GwtHtml("build/test-resources/GwtTestSpecTest/test.html")
+@GwtHtml("test.html")
 class GwtTestSpecTest : GwtTestSpec({
     // beforeSpec/afterSpec 콜백으로 테스트 환경을 설정하고 정리합니다.
     beforeSpec {
-        val testHtml = File("build/test-resources/GwtTestSpecTest/test.html")
-        System.setProperty("gwt.junit.remoteUrl", "file:///" + testHtml.parentFile.absolutePath.replace("\\", "/"))
-        testHtml.parentFile.mkdirs()
+        val baseDir = File("build/test-resources/GwtTestSpecTest")
+        val testHtml = File(baseDir, "test.html")
+        // remoteUrl을 파일 시스템 경로로 설정 (테스트용)
+        System.setProperty("gwt.junit.remoteUrl", "file:///" + baseDir.absolutePath.replace("\\", "/"))
+        
+        baseDir.mkdirs()
         testHtml.writeText("""
             <!DOCTYPE html>
             <html>
@@ -68,6 +71,7 @@ class GwtTestSpecTest : GwtTestSpec({
     Given("GwtTestSpec을 상속하여 테스트를 실행할 때") {
         When("페이지가 정상적으로 로드되면") {
             Then("페이지 구성 요소에 접근할 수 있다") {
+                println(page.content())
                 page.title() shouldBe "GwtTestSpec Test"
                 val h1Element = page.locator("h1")
                 h1Element.textContent() shouldBe "GwtTestSpec Test Page"
@@ -76,7 +80,7 @@ class GwtTestSpecTest : GwtTestSpec({
 
         When("로그를 가져오면") {
             val logs = page.getConsoleLogs()
-
+            println(logs);
             Then("따옴표로 감싸진 일반 로그를 파싱할 수 있어야 한다") {
                 logs shouldContain "정상 로그"
             }
