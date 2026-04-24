@@ -1,0 +1,13 @@
+{
+  "agents": {
+    "overrides": {
+      "test-specialist": {
+        "enabled": true,
+        "runConfig": {
+          "maxTurns": 20,
+          "maxTimeMinutes": 10
+        }
+      }
+    }
+  }
+}

@@ -95,7 +95,7 @@ class GwtTestPluginTest : DescribeSpec({
 
                 // beforeEach에서 설정한 값
                 val expectedPath = project.file("src/test/webapp")
-                parameters.contentRoot.get().asFile shouldBe expectedPath
+                parameters.contentRoot.files shouldContain expectedPath
             }
         }
         context("'war' 플러그인과 함께 적용 시") {

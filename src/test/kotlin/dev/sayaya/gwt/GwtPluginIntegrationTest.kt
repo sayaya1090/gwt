@@ -51,7 +51,7 @@ class GwtPluginIntegrationTest : DescribeSpec({
         val runner = GradleRunner.create()
             .withProjectDir(projectDir)
             .withPluginClasspath()
-            .withArguments("build", "--stacktrace")
+            .withArguments("build", "--stacktrace", "--info")
 
         val result = runner.build()
         println(result.output)

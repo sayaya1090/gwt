@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     // Playwright
-    api("com.microsoft.playwright:playwright:1.59.1")
+    api("com.microsoft.playwright:playwright:1.59.0")
 
     // Kotest
     api("io.kotest:kotest-runner-junit5:6.1.10")
@@ -23,11 +23,33 @@ dependencies {
     api(kotlin("reflect"))
 
     api("com.google.code.gson:gson:2.13.2")
+
+    // Gradle Testing
+    api(gradleTestKit())
+
+    // Access to WebServerService for reproduction tests
+    testImplementation(project(":"))
 }
 
 tasks {
     test {
         useJUnitPlatform()
+        // 표준 출력 및 표준 에러를 로그에 표시
+        testLogging {
+            showStandardStreams = true
+            events("passed", "skipped", "failed", "standardOut", "standardError")
+            showExceptions = true
+            showStackTraces = true
+            showCauses = true
+        }
+        // Java 17+에서 ProjectBuilder 사용을 위한 모듈 열기 설정
+
+        jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED"
+        )
     }
 }
 

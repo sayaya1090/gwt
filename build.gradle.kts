@@ -11,7 +11,7 @@ val docstrGwtPluginVersion = "2.2.9"
 
 allprojects {
     group = "dev.sayaya"
-    version = "$docstrGwtPluginVersion.1"
+    version = "2.2.9.1-TEMP2"
 
     repositories {
         gradlePluginPortal()
@@ -61,10 +61,10 @@ gradlePlugin {
             tags = listOf("gwt", "java", "test", "playwright", "testing", "kotest")
         }
     }
-}
-tasks {
-    test {
-        useJUnitPlatform()
+    tasks {
+        test {
+            useJUnitPlatform()
+        }
     }
     publishing {
         repositories {

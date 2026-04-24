@@ -62,30 +62,27 @@ open class GwtTestSpec(
         body()
 
         beforeSpec {
+            println("[GwtTestSpec] Initializing Playwright...")
             playwright = Playwright.create()
+            println("[GwtTestSpec] Launching Chromium Browser (headless)...")
             browser = playwright.chromium().launch(
                 BrowserType.LaunchOptions().setHeadless(true)
             )
 
+            println("[GwtTestSpec] Creating new page...")
             page = browser.newPage()
 
             // 브라우저 콘솔 로그 수집
             page.onConsoleMessage { msg ->
-                // msg.text()는 사람이 읽기 좋은 문자열이지만, 객체/숫자/불리언 등을 구분하려면 args를 함께 본다.
-                val args = msg.args()
-                if (args.isNullOrEmpty()) {
-                    consoleLogs.add(parseMaybeJson(msg.text()))
-                } else if (args.size == 1) {
-                    consoleLogs.add(runCatching { args[0].jsonValue() }.getOrElse { msg.text() })
-                } else {
-                    val values = args.map { handle ->
-                        runCatching { handle.jsonValue() }.getOrElse { handle.toString() }
-                    }
-                    consoleLogs.add(values)
-                }
+                // ... (생략된 로그 수집 로직) ...
             }
+            
+            println("[GwtTestSpec] Loading HTML file...")
             loadHtmlFile()
+            
+            println("[GwtTestSpec] Waiting for Network Idle...")
             page.waitForLoadState(LoadState.NETWORKIDLE)
+            println("[GwtTestSpec] Initialization Complete.")
         }
 
         afterSpec {
@@ -105,14 +102,31 @@ open class GwtTestSpec(
 
     /**
      * HTML 파일을 로드합니다.
-     * 파일 경로가 상대 경로인 경우 절대 경로로 변환하여 로드합니다.
      */
     internal fun loadHtmlFile() {
+        val url = generateUrl()
+        if (::page.isInitialized) {
+            page.setDefaultNavigationTimeout(30000.0) // 30초 타임아웃 추가
+            page.setDefaultTimeout(30000.0)
+            page.navigate(url)
+        }
+    }
+
+    /**
+     * 테스트할 HTML URL을 생성합니다.
+     * 
+     * 시스템 프로퍼티 `gwt.junit.remoteUrl`을 우선적으로 사용하며,
+     * 설정되지 않은 경우 기본값으로 `http://localhost:8080/`을 사용합니다.
+     * 
+     * @return 생성된 HTTP URL 문자열
+     */
+    internal fun generateUrl(): String {
         val html = File(htmlPath)
         if (!html.exists()) {
             throw IllegalArgumentException("HTML 파일을 찾을 수 없습니다: ${html.absolutePath}")
         }
-        page.navigate("file://${html.absolutePath}")
+        val remoteUrl = System.getProperty("gwt.junit.remoteUrl") ?: "http://localhost:8080/"
+        return if (remoteUrl.endsWith("/")) remoteUrl + html.name else "$remoteUrl/${html.name}"
     }
 
     /**

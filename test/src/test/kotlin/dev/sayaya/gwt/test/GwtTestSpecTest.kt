@@ -16,6 +16,7 @@ class GwtTestSpecTest : GwtTestSpec({
     // beforeSpec/afterSpec 콜백으로 테스트 환경을 설정하고 정리합니다.
     beforeSpec {
         val testHtml = File("build/test-resources/GwtTestSpecTest/test.html")
+        System.setProperty("gwt.junit.remoteUrl", "file:///" + testHtml.parentFile.absolutePath.replace("\\", "/"))
         testHtml.parentFile.mkdirs()
         testHtml.writeText("""
             <!DOCTYPE html>
@@ -60,6 +61,7 @@ class GwtTestSpecTest : GwtTestSpec({
         page.reload()
     }
     afterSpec {
+        System.clearProperty("gwt.junit.remoteUrl")
         File("build/test-resources/GwtTestSpecTest").deleteRecursively()
     }
 

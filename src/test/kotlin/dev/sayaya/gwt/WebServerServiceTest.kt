@@ -29,7 +29,7 @@ class WebServerServiceTest : DescribeSpec({
 
             // 빌드 서비스 등록
             val serviceProvider = project.gradle.sharedServices.registerIfAbsent("testWebServer", WebServerService::class.java) {
-                parameters.contentRoot.set(tempDir)
+                parameters.contentRoot.from(tempDir)
                 parameters.port.set(0) // 랜덤 포트
             }
 
@@ -56,7 +56,7 @@ class WebServerServiceTest : DescribeSpec({
             val tempDir = createTempDirectory("webserver-service-test").toFile()
 
             val serviceProvider = project.gradle.sharedServices.registerIfAbsent("invalidPortServer", WebServerService::class.java) {
-                parameters.contentRoot.set(tempDir)
+                parameters.contentRoot.from(tempDir)
                 parameters.port.set(-1) // 유효하지 않은 포트
             }
 
@@ -77,7 +77,7 @@ class WebServerServiceTest : DescribeSpec({
             val tempDir = createTempDirectory("webserver-service-test").toFile()
 
             val serviceProvider = project.gradle.sharedServices.registerIfAbsent("occupiedPortServer", WebServerService::class.java) {
-                parameters.contentRoot.set(tempDir)
+                parameters.contentRoot.from(tempDir)
                 parameters.port.set(occupiedPort)
             }
 
@@ -108,7 +108,7 @@ class WebServerServiceTest : DescribeSpec({
                 File(tempDir, "index.html").writeText("test")
 
                 val serviceProvider = project.gradle.sharedServices.registerIfAbsent("closingServer", WebServerService::class.java) {
-                    parameters.contentRoot.set(tempDir)
+                    parameters.contentRoot.from(tempDir)
                     parameters.port.set(0)
                 }
 
@@ -131,7 +131,7 @@ class WebServerServiceTest : DescribeSpec({
                 val tempDir = createTempDirectory("webserver-service-test").toFile()
 
                 val serviceProvider = project.gradle.sharedServices.registerIfAbsent("multiCloseServer", WebServerService::class.java) {
-                    parameters.contentRoot.set(tempDir)
+                    parameters.contentRoot.from(tempDir)
                     parameters.port.set(0)
                 }
 
