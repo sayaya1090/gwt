@@ -3,7 +3,7 @@ plugins {
     id("maven-publish")
     signing
     id("org.jetbrains.kotlinx.kover")
-    id("com.vanniktech.maven.publish") version "0.36.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 repositories {
@@ -12,17 +12,17 @@ repositories {
 
 dependencies {
     // Playwright
-    api("com.microsoft.playwright:playwright:1.59.0")
+    api("com.microsoft.playwright:playwright:1.63.0")
 
     // Kotest
-    api("io.kotest:kotest-runner-junit5:6.1.10")
-    api("io.kotest:kotest-assertions-core:6.1.10")
+    api("io.kotest:kotest-runner-junit5:6.2.6")
+    api("io.kotest:kotest-assertions-core:6.2.6")
 
     // Kotlin
     api(kotlin("stdlib"))
     api(kotlin("reflect"))
 
-    api("com.google.code.gson:gson:2.13.2")
+    api("com.google.code.gson:gson:2.14.0")
 
     // Gradle Testing
     api(gradleTestKit())

@@ -1,10 +1,10 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.4.21"
     id("maven-publish")
-    id("com.gradle.plugin-publish") version "2.1.1"
-    id("org.jetbrains.kotlinx.kover") version "0.9.8"
+    id("com.gradle.plugin-publish") version "2.2.1"
+    id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
 val docstrGwtPluginVersion = "2.2.9"
@@ -24,11 +24,11 @@ subprojects {
 }
 dependencies {
     implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$docstrGwtPluginVersion")
-    implementation("io.ktor:ktor-server-core:3.4.2")
-    implementation("io.ktor:ktor-server-netty:3.4.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("io.ktor:ktor-server-core:3.6.0")
+    implementation("io.ktor:ktor-server-netty:3.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     // 테스트 구현에 필요한 의존성
-    testImplementation("io.kotest:kotest-runner-junit5:6.1.10")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
     kover(project(":test"))
 }
 gradlePlugin {
