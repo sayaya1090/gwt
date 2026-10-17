@@ -254,6 +254,49 @@ class GwtBasePluginTest : DescribeSpec({
         }
     }
 
+    describe("Test 태스크 구성") {
+        it("힙 크기는 devMode → gwt → 기본값 순으로 적용된다") {
+            project.evaluate()
+            val test = project.tasks.getByName("test") as org.gradle.api.tasks.testing.Test
+            test.minHeapSize shouldBe GwtBaseTask.DEFAULT_MIN_HEAP_SIZE
+            test.maxHeapSize shouldBe GwtBaseTask.DEFAULT_MAX_HEAP_SIZE
+        }
+
+        it("gwt 힙 설정과 devMode 힙 설정을 반영한다") {
+            gwt.minHeapSize.set("1024M")
+            gwt.maxHeapSize.set("2048M")
+            gwt.devMode.maxHeapSize.set("3g")
+            project.evaluate()
+            val test = project.tasks.getByName("test") as org.gradle.api.tasks.testing.Test
+            test.minHeapSize shouldBe "1024M"
+            test.maxHeapSize shouldBe "3g"
+        }
+
+        it("gwt.args와 gwt.persistentunitcachedir 시스템 프로퍼티를 설정한다") {
+            gwt.war.set(project.file("src/main/webapp"))
+            project.evaluate()
+            val test = project.tasks.getByName("test") as org.gradle.api.tasks.testing.Test
+            test.systemProperties["gwt.args"] shouldBe
+                "-war ${project.file("src/main/webapp").absolutePath} " +
+                "-deploy ${gwt.deploy.get().asFile.absolutePath} " +
+                "-extra ${gwt.extra.get().asFile.absolutePath}"
+            test.systemProperties["gwt.persistentunitcachedir"].toString() shouldContain "gwt-unitCache"
+        }
+
+        it("main·test 소스 디렉토리를 테스트 클래스패스에 추가하고 testImplementation이 gwtDevRuntimeClasspath를 상속한다") {
+            project.evaluate()
+            // 저장소가 없는 ProjectBuilder 환경에서 클래스패스를 해석할 수 있도록 원격 GWT 의존성은 비운다.
+            listOf("implementation", GwtBasePlugin.GWT_DEV_CONFIGURATION_NAME).forEach {
+                project.configurations.getByName(it).dependencies.clear()
+            }
+            val test = project.tasks.getByName("test") as org.gradle.api.tasks.testing.Test
+            val main = project.extensions.getByType(SourceSetContainer::class.java).getByName("main")
+            test.classpath.files shouldContainAll main.java.srcDirs
+            project.configurations.getByName("testImplementation").extendsFrom.map { it.name } shouldContain
+                GwtBasePlugin.GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME
+        }
+    }
+
     describe("실행 전 검증") {
         it("modules가 비어 있으면 GradleException을 던진다") {
             val task = project.tasks.getByName("gwtCompile") as GwtCompileTask
