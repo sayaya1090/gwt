@@ -28,7 +28,7 @@ Add the plugin to the `plugins` block in your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("dev.sayaya.gwt") version "2.2.9.5"
+    id("dev.sayaya.gwt") version "2.3.0"
 }
 ```
 
@@ -36,7 +36,7 @@ plugins {
 
 ```groovy
 plugins {
-    id 'dev.sayaya.gwt' version '2.2.9.5'
+    id 'dev.sayaya.gwt' version '2.3.0'
 }
 ```
 
@@ -46,11 +46,13 @@ If you want to write browser tests using kotest + playwright:
 
 ```kotlin
 dependencies {
-    testImplementation("dev.sayaya:gwt-test:2.2.9.5")
+    testImplementation("dev.sayaya:gwt-test:2.3.0")
 }
 ```
 
 ## ⚙️ Configuration
+
+> Since 2.3.0 this plugin no longer depends on `org.docstr.gwt` (or any other third-party GWT Gradle plugin). The `gwt { }` extension, the `gwtCompile` / `gwtDevMode` tasks and the GWT SDK dependencies are provided by the plugin itself. Do not apply `org.docstr.gwt` together with it.
 
 Configure GWT in the `gwt` block. Options set at the top level apply to `gwtCompile`; options inside `devMode { }` apply to `gwtDevMode` and `gwtTestCompile`, and any option not set in `devMode` falls back to the top-level value:
 
@@ -59,6 +61,10 @@ gwt {
     gwtVersion = "2.13.0"
     modules = listOf("com.example.App")
     war = file("src/main/webapp")
+    compiler {
+        // GWT Compiler-only options, applied to gwtCompile and gwtTestCompile
+        strict = true
+    }
     devMode {
         modules = listOf("com.example.Test")
         // The web server will serve files from this directory during tests
@@ -99,8 +105,8 @@ Runs tests (automatically depends on `gwtTestCompile` and uses the Web Server Se
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.3.20"
-    id("dev.sayaya.gwt") version "2.2.9.5"
+    kotlin("jvm") version "2.4.21"
+    id("dev.sayaya.gwt") version "2.3.0"
     id("war")
 }
 
@@ -109,15 +115,15 @@ repositories {
 }
 
 dependencies {
-    implementation("org.gwtproject:gwt-user:2.12.2")
-    compileOnly("org.gwtproject:gwt-dev:2.12.2")
+    // GWT SDK (gwt-user, gwt-dev, gwt-codeserver, gwt-servlet) is added automatically
+    // from gwt.gwtVersion — no need to declare it, and no third-party GWT plugin is required.
 
     // Lombok support
-    implementation("org.projectlombok:lombok:1.18.36")
-    annotationProcessor("org.projectlombok:lombok:1.18.36")
+    implementation("org.projectlombok:lombok:1.18.48")
+    annotationProcessor("org.projectlombok:lombok:1.18.48")
 
     // Tests
-    testImplementation("io.kotest:kotest-runner-junit5:6.1.10")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
 }
 
 gwt {
@@ -286,10 +292,10 @@ class UserInterfaceTest : GwtTestSpec({
 
 ### Gradle Plugin
 
-- Gradle 8.0+
-- Kotlin 1.9+ (for Kotlin DSL)
-- Java 11+
-- GWT 2.10.0+
+- Gradle 9.3+ (verified with 9.3.0 and 9.4.1)
+- Java 17+
+- GWT 2.12+ (default `gwtVersion` 2.12.1; verified with 2.13.0 and 2.13.1)
+- No third-party GWT Gradle plugin required (`org.docstr.gwt` is no longer used)
 
 ### kotest + playwright Test Library
 
@@ -376,7 +382,7 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### Unreleased
+### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.
 - ✅ **Compatible DSL**: Common options (`gwtVersion`, `modules`, `war`, `sourceLevel`, `minHeapSize`, `maxHeapSize`, `extraSourceDirs`, etc.), the `compiler { }` block (`strict`, `optimize`, `draftCompile`, ...; applied to both `gwtCompile` and `gwtTestCompile`), the `devMode { }` block, and the `gwtCompile` / `gwtDevMode` task names are unchanged.
 - 🧪 **Test task defaults preserved**: Like `org.docstr.gwt`, every `Test` task gets the GWT heap size (`devMode` → `gwt` → 256M/512M), the `gwt.args` (`-war -deploy -extra`) and `gwt.persistentunitcachedir` system properties, main/test source directories on the test classpath, and `testImplementation` extending `gwtDevRuntimeClasspath`.
