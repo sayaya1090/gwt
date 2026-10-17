@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
-import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 
@@ -70,42 +69,12 @@ class GwtTestCompileTaskTest : DescribeSpec({
             }
         }
     }
-    describe("GwtDevPluginExtension 프록시 클래스") {
-        lateinit var proxy: GwtTestCompileTask.Companion.GwtDevPluginExtension
+    describe("devMode 옵션의 상위 gwt 설정 상속") {
+        lateinit var proxy: GwtDevModeOptions
 
         beforeEach {
-            proxy = GwtTestCompileTask.Companion.GwtDevPluginExtension(gwtExtension)
-        }
-
-        context("기본 위임 프로퍼티") {
-            it("gwtVersion은 extension의 gwtVersion을 그대로 반환한다") {
-                gwtExtension.gwtVersion.set("2.11.0")
-                proxy.gwtVersion.get() shouldBe "2.11.0"
-            }
-
-            it("jakarta는 extension의 jakarta를 그대로 반환한다") {
-                gwtExtension.jakarta.set(true)
-                proxy.jakarta.get() shouldBe true
-
-                gwtExtension.jakarta.set(false)
-                proxy.jakarta.get() shouldBe false
-            }
-
-            it("compiler는 extension의 compiler를 그대로 반환한다") {
-                proxy.compiler shouldBe gwtExtension.compiler
-            }
-
-            it("devMode는 extension의 devMode를 그대로 반환한다") {
-                proxy.devMode shouldBe gwtExtension.devMode
-            }
-
-            it("gwtTest는 extension의 gwtTest를 그대로 반환한다") {
-                proxy.gwtTest shouldBe gwtExtension.gwtTest
-            }
-
-            it("superDev는 extension의 superDev를 그대로 반환한다") {
-                proxy.superDev shouldBe gwtExtension.superDev
-            }
+            // devMode에 값을 지정하지 않으면 GwtBasePlugin의 convention에 따라 상위 gwt 설정을 이어받는다.
+            proxy = gwtExtension.devMode
         }
 
         context("Property<String> 타입 - devMode 우선 적용") {
@@ -286,19 +255,19 @@ class GwtTestCompileTaskTest : DescribeSpec({
             }
         }
 
-        context("ConfigurableFileCollection 타입 - devMode 우선 적용") {
-            it("extraSourceDirs는 devMode 설정을 우선하고, 없으면 base를 사용한다") {
+        context("ConfigurableFileCollection 타입 - 합산 적용") {
+            it("gwtTestCompile의 extraSourceDirs는 base와 devMode 설정을 모두 포함한다") {
                 val baseFile = project.file("base.txt")
                 baseFile.writeText("base")
-                val baseFiles = project.files(baseFile)
-                gwtExtension.extraSourceDirs.from(baseFiles)
-                proxy.extraSourceDirs.files.shouldContain(baseFile)
+                gwtExtension.extraSourceDirs.from(project.files(baseFile))
 
                 val devFile = project.file("dev.txt")
                 devFile.writeText("dev")
-                val devFiles = project.files(devFile)
-                gwtExtension.devMode.extraSourceDirs.from(devFiles)
-                proxy.extraSourceDirs.files.shouldContain(devFile)
+                gwtExtension.devMode.extraSourceDirs.from(project.files(devFile))
+
+                val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
+                task.extraSourceDirs.files.shouldContain(baseFile)
+                task.extraSourceDirs.files.shouldContain(devFile)
             }
         }
     }

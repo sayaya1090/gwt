@@ -1,6 +1,6 @@
 # sayaya-gwt 플러그인 개발자 가이드
 
-이 스킬은 `sayaya-gwt` Gradle 플러그인 프로젝트의 구조, 내부 동작 원리 및 개발 표준을 정의합니다. 이 플러그인은 `org.docstr.gwt`를 확장하여 Lombok 통합, 테스트용 내장 웹서버, HTML 호스트 자동 생성 기능을 제공합니다.
+이 스킬은 `sayaya-gwt` Gradle 플러그인 프로젝트의 구조, 내부 동작 원리 및 개발 표준을 정의합니다. 이 플러그인은 자체 `GwtBasePlugin`으로 GWT 컴파일·DevMode를 구성하고(외부 GWT Gradle 플러그인 비의존), Lombok 통합, 테스트용 내장 웹서버, HTML 호스트 자동 생성 기능을 제공합니다.
 
 ## 기술 스택 및 버전
 
@@ -8,7 +8,7 @@
 |-----------|---------|------|
 | Gradle | 8.x+    | 빌드 시스템 |
 | Kotlin | 2.3.20  | 플러그인 구현 언어 |
-| org.docstr.gwt | 2.2.9   | 기반 GWT Gradle 플러그인 |
+| GWT SDK | 2.12.1 (기본값, `gwt.gwtVersion`으로 변경) | gwt-dev / gwt-user / gwt-codeserver |
 | Ktor | 3.4.2   | 테스트용 내장 웹서버 (Netty) |
 | Playwright | 1.59.0  | 브라우저 자동화 테스트 |
 | Kotest | 6.1.10  | 테스트 프레임워크 |

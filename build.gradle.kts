@@ -7,11 +7,9 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
-val docstrGwtPluginVersion = "2.2.9"
-
 allprojects {
     group = "dev.sayaya"
-    version = "$docstrGwtPluginVersion.5"
+    version = "2.2.9.5"
 
     repositories {
         gradlePluginPortal()
@@ -23,7 +21,6 @@ subprojects {
     apply(plugin = "kotlin")
 }
 dependencies {
-    implementation("org.docstr.gwt:org.docstr.gwt.gradle.plugin:$docstrGwtPluginVersion")
     implementation("io.ktor:ktor-server-core:3.6.0")
     implementation("io.ktor:ktor-server-netty:3.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
@@ -41,7 +38,7 @@ gradlePlugin {
             implementationClass = "${project.group}.gwt.GwtPlugin"
             version = project.version
             displayName = "GWT Gradle Plugin"
-            description = "Extends org.docstr.gwt plugin with automatic Lombok support, built-in web server management for tests, and HTML host file generation for GWT development"
+            description = "GWT compilation and DevMode for Gradle with automatic Lombok support, built-in web server management for tests, and HTML host file generation for GWT development"
             tags = listOf("gwt", "java", "web", "lombok", "test", "playwright")
         }
         register("gwtLombokPlugin") {

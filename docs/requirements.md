@@ -36,7 +36,7 @@
 
 ### 2.3 안정성 및 호환성
 - **NFR5**: Gradle의 최신 버전(8.x 이상) 및 Java 11 이상의 환경에서 안정적으로 동작해야 한다.
-- **NFR6**: 기존 `org.docstr.gwt` 플러그인과 호환되어야 하며, 이를 확장하는 방식으로 동작해야 한다.
+- **NFR6**: 외부 GWT Gradle 플러그인에 의존하지 않고 GWT SDK만으로 동작해야 하며, 기존 `gwt { ... }` DSL(공통 옵션, `devMode { }`)과 `gwtCompile`·`gwtDevMode` 태스크 이름을 유지해야 한다.
 
 ---
 

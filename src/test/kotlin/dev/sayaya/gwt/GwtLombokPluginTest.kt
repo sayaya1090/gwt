@@ -3,7 +3,6 @@ package dev.sayaya.gwt
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
-import org.docstr.gwt.AbstractBaseTask
 import org.gradle.api.Project
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.tasks.SourceSetContainer
@@ -16,7 +15,7 @@ class GwtLombokPluginTest : DescribeSpec({
     beforeEach {
         project = ProjectBuilder.builder().build()
         project.pluginManager.apply(GwtLombokPlugin::class.java)
-        project.extensions.getByType(org.docstr.gwt.GwtPluginExtension::class.java).apply {
+        project.extensions.getByType(GwtPluginExtension::class.java).apply {
             modules.set(listOf("test.Module"))
         }
     }
@@ -24,8 +23,8 @@ class GwtLombokPluginTest : DescribeSpec({
         it("java 플러그인을 적용해야 한다") {
             project.plugins.hasPlugin("java") shouldBe true
         }
-        it("'org.docstr.gwt' 플러그인을 적용해야 한다") {
-            project.plugins.hasPlugin("org.docstr.gwt") shouldBe true
+        it("GwtBasePlugin을 적용해야 한다") {
+            project.plugins.hasPlugin(GwtBasePlugin::class.java) shouldBe true
         }
 
         it("main 및 test 소스셋에 생성된 소스 디렉토리를 추가해야 한다") {
@@ -105,6 +104,6 @@ class GwtLombokPluginTest : DescribeSpec({
     companion object {
         private fun File.toPathString(): String = this.path.replace(File.separatorChar, '/')
         private fun Project.evaluate() = (project as ProjectInternal).evaluate()
-        private fun Project.getGwtTasks(): List<AbstractBaseTask> = project.tasks.withType(AbstractBaseTask::class.java).toList()
+        private fun Project.getGwtTasks(): List<GwtBaseTask> = project.tasks.withType(GwtBaseTask::class.java).toList()
     }
 }

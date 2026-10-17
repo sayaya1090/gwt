@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
@@ -33,8 +32,8 @@ class GwtTestPluginTest : DescribeSpec({
         it("java 플러그인을 적용해야 한다") {
             project.plugins.hasPlugin("java") shouldBe true
         }
-        it("는 'org.docstr.gwt' 플러그인을 적용해야 한다") {
-            project.plugins.hasPlugin("org.docstr.gwt") shouldBe true
+        it("는 GwtBasePlugin을 적용해야 한다") {
+            project.plugins.hasPlugin(GwtBasePlugin::class.java) shouldBe true
         }
 
         it("는 모든 JavaCompile 태스크의 인코딩을 UTF-8로 설정해야 한다") {

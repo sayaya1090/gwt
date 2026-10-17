@@ -1,6 +1,6 @@
 zjalt/# GWT Gradle Plugin
 
-This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) development in a Gradle environment, with a special focus on testing and Lombok integration. It extends the existing `org.docstr.gwt` plugin and automates repetitive setup and execution steps required for GWT tests.
+This project is a Gradle plugin designed to simplify GWT (Google Web Toolkit) development in a Gradle environment, with a special focus on testing and Lombok integration. It provides its own GWT compile/DevMode tasks (no dependency on any third-party GWT Gradle plugin) and automates repetitive setup and execution steps required for GWT tests.
 
 ## ✨ Key Features
 
@@ -52,7 +52,7 @@ dependencies {
 
 ## ⚙️ Configuration
 
-The plugin extends the base GWT plugin configuration. Configure GWT in the `gwt` block:
+Configure GWT in the `gwt` block. Options set at the top level apply to `gwtCompile`; options inside `devMode { }` apply to `gwtDevMode` and `gwtTestCompile`, and any option not set in `devMode` falls back to the top-level value:
 
 ```kotlin
 gwt {
@@ -305,7 +305,7 @@ dev.sayaya.gwt (GwtPlugin)
 ├── dev.sayaya.gwt.lombok (GwtLombokPlugin)
 │   └── Automatically sets -javaagent for Lombok annotation processing
 └── dev.sayaya.gwt.test (GwtTestPlugin)
-    ├── Applies org.docstr.gwt (base GWT plugin)
+    ├── Applies GwtBasePlugin (gwt extension, gwtCompile/gwtDevMode tasks, GWT dependencies)
     ├── Registers GwtTestCompileTask
     └── Registers WebServerService (Build Service)
 ```
@@ -371,13 +371,17 @@ This project is available under the terms specified in the project’s license f
 
 ## Related Projects
 
-- [gwt-gradle-plugin](https://github.com/docstr/gwt-gradle-plugin) – Base GWT Gradle plugin
 - [GWT Project](https://www.gwtproject.org/) – Google Web Toolkit
 - [Lombok](https://projectlombok.org/) – Java annotation processor
 
 ## 📝 Changelog
 
-### 2.2.9.5 (Latest)
+### Unreleased
+- 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.
+- ✅ **Compatible DSL**: Common options (`gwtVersion`, `modules`, `war`, `sourceLevel`, `minHeapSize`, `maxHeapSize`, `extraSourceDirs`, etc.), the `devMode { }` block, and the `gwtCompile` / `gwtDevMode` task names are unchanged.
+- ⚠️ **Breaking**: The `compiler { }`, `superDev { }` and `gwtTest { }` blocks and the `gwtSuperDev` task from `org.docstr.gwt` are no longer available. Default `gwtVersion` remains `2.12.1`.
+
+### 2.2.9.5
 - ✨ **Custom Web Port Support**: Added `gwt.test.webPort` property to allow manual port assignment in multi-module environments.
 - 🔗 **Auto-Injection**: Port settings are automatically propagated to `gwt.junit.remoteUrl` system property.
 - 📁 **Relative Path Support**: Refactored `GwtTestSpec` to use web server relative paths instead of absolute file system paths.

@@ -3,12 +3,12 @@ package dev.sayaya.gwt
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
-import org.docstr.gwt.AbstractBaseTask
 
 /**
  * GWT를 위한 Lombok 어노테이션 처리를 설정하는 플러그인
  *
  * 이 플러그인은 다음을 수행합니다:
+ * - 기반 플러그인([GwtBasePlugin]) 적용
  * - main과 test 소스셋에 생성된 소스 디렉토리 추가
  * - ECJ와 함께 Lombok java agent를 사용하도록 GWT 컴파일러 태스크 설정
  * - annotationProcessor 설정에서 Lombok 자동 감지
@@ -16,7 +16,7 @@ import org.docstr.gwt.AbstractBaseTask
 class GwtLombokPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.plugins.apply("java")
-        project.plugins.apply("org.docstr.gwt")
+        project.plugins.apply(GwtBasePlugin::class.java)
 
         // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
         project.excludeJakartaServletApi()
@@ -36,7 +36,7 @@ class GwtLombokPlugin : Plugin<Project> {
                 dependency.name.matches(Regex("^lombok-\\d+\\.\\d+\\.\\d+.*\\.jar$"))
             }
             if (lombok != null) {
-                project.tasks.withType(AbstractBaseTask::class.java).configureEach {
+                project.tasks.withType(GwtBaseTask::class.java).configureEach {
                     jvmArgs = jvmArgs + "-javaagent:${lombok}=ECJ"
                 }
             }

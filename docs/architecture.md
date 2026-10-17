@@ -8,8 +8,8 @@
 
 ### Layer 1: Gradle Integration Layer (빌드 자동화)
 프로젝트의 진입점이며, Gradle 태스크와 설정을 관리합니다.
-- **Plugins**: `GwtPlugin`, `GwtLombokPlugin`, `GwtTestPlugin`. 프로젝트 구성 및 기능 활성화.
-- **Tasks**: `GwtGenerateTestHtmlTask`, `GwtTestCompileTask`. GWT 결과물을 생성하고 테스트 환경을 준비.
+- **Plugins**: `GwtPlugin`, `GwtLombokPlugin`, `GwtTestPlugin`, `GwtBasePlugin`. 프로젝트 구성 및 기능 활성화. `GwtBasePlugin`이 `gwt` 확장과 GWT 의존성을 구성합니다.
+- **Tasks**: `GwtCompileTask`(`gwtCompile`), `GwtDevModeTask`(`gwtDevMode`), `GwtGenerateTestHtmlTask`, `GwtTestCompileTask`. GWT 결과물을 생성하고 테스트 환경을 준비.
 
 ### Layer 2: Infrastructure Layer (실행 환경)
 테스트 리소스를 제공하기 위한 런타임 인프라를 담당합니다.
@@ -45,7 +45,7 @@
 | **Web Server** | Ktor (Netty) | 테스트용 정적 파일 서빙 |
 | **Browser Automation** | Playwright | 브라우저 제어 및 로그 수집 |
 | **Testing Spec** | Kotest | BDD 스타일 테스트 프레임워크 |
-| **GWT Compiler** | org.docstr.gwt | 내부 GWT 컴파일 엔진 |
+| **GWT Compiler** | GWT SDK (gwt-dev, gwt-user, gwt-codeserver) | `GwtBasePlugin`이 의존성을 추가하고 `GwtCompileTask`/`GwtDevModeTask`가 `JavaExec`로 실행 |
 
 ---
 

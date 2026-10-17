@@ -1,8 +1,6 @@
 
 package dev.sayaya.gwt
 
-import org.docstr.gwt.GwtDevModeTask
-import org.docstr.gwt.GwtPluginExtension
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -18,7 +16,7 @@ import org.gradle.api.tasks.testing.Test
  * GWT 테스트 컴파일 및 개발 모드를 설정하는 플러그인입니다.
  *
  * ## 주요 기능
- * - 기본 `org.docstr.gwt` 플러그인 적용
+ * - 기반 플러그인([GwtBasePlugin]) 적용: `gwt` 확장, `gwtCompile`·`gwtDevMode` 태스크, GWT 의존성
  * - GWT 테스트 모듈 컴파일을 위한 태스크 등록
  * - 테스트 소스를 포함하도록 개발 모드 설정
  * - Gradle Build Service를 이용한 웹 서버 자동 생명주기 관리
@@ -63,7 +61,7 @@ class GwtTestPlugin : Plugin<Project> {
      */
     private fun applyRequiredPlugins(project: Project) {
         project.plugins.apply("java")
-        project.plugins.apply("org.docstr.gwt")
+        project.plugins.apply(GwtBasePlugin::class.java)
 
         // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
         project.excludeJakartaServletApi()
