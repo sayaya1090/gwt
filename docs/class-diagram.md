@@ -50,6 +50,10 @@ classDiagram
         +Property~String~ sourceLevel
         +ConfigurableFileCollection extraSourceDirs
     }
+    class GwtCompilerOptions {
+        +Property~Boolean~ strict
+        +Property~Int~ optimize
+    }
     class GwtDevModeOptions {
         +Property~Boolean~ startServer
         +Property~Int~ port
@@ -57,6 +61,7 @@ classDiagram
     class GwtPluginExtension {
         +Property~String~ gwtVersion
         +Property~Boolean~ jakarta
+        +GwtCompilerOptions compiler
         +GwtDevModeOptions devMode
     }
 
@@ -77,6 +82,8 @@ classDiagram
     GwtBasePlugin --> GwtPluginExtension : creates (gwt)
     GwtOptions <|-- GwtPluginExtension
     GwtOptions <|-- GwtDevModeOptions
+    GwtOptions <|-- GwtCompilerOptions
+    GwtPluginExtension o-- GwtCompilerOptions : compiler
     GwtPluginExtension o-- GwtDevModeOptions : devMode
     GwtPluginExtension --|> ExtensionAware : implements
     GwtPluginExtension o-- GwtTestTaskExtension : extends via mixin (test)
@@ -166,7 +173,7 @@ classDiagram
 *   **GwtTestPlugin**: 테스트 환경의 핵심 플러그인. GWT 전용 컴파일 태스크와 HTML 생성 태스크를 등록하고, 웹 서버 서비스를 구성합니다.
 
 ### 2.2 태스크 및 설정 (Tasks & Extensions)
-*   **GwtPluginExtension / GwtOptions / GwtDevModeOptions**: `gwt { ... }` DSL. 공통 옵션(`modules`, `war`, `sourceLevel` 등)과 `devMode { ... }` 블록을 제공하며, devMode에 지정하지 않은 공통 옵션은 상위 값을 이어받습니다.
+*   **GwtPluginExtension / GwtOptions / GwtCompilerOptions / GwtDevModeOptions**: `gwt { ... }` DSL. 공통 옵션(`modules`, `war`, `sourceLevel` 등), 컴파일러 전용 `compiler { ... }` 블록(`strict` 등, `gwtCompile`·`gwtTestCompile`에 적용), `devMode { ... }` 블록을 제공하며, 하위 블록에 지정하지 않은 공통 옵션은 상위 값을 이어받습니다.
 *   **GwtBaseTask / GwtCompileTask / GwtDevModeTask**: `JavaExec` 기반으로 GWT `Compiler`·`DevMode`를 실행합니다. 옵션을 GWT 커맨드라인 인자로 변환하고 클래스패스를 구성합니다.
 *   **GwtGenerateTestHtmlTask**: GWT 모듈을 브라우저에서 실행하기 위한 `.html` 호스트 파일을 자동 생성합니다.
 *   **GwtTestCompileTask**: `GwtCompileTask`를 확장하여, 메인 소스뿐만 아니라 테스트 소스까지 포함해 GWT 컴파일을 수행합니다.

@@ -378,8 +378,8 @@ This project is available under the terms specified in the project’s license f
 
 ### Unreleased
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.
-- ✅ **Compatible DSL**: Common options (`gwtVersion`, `modules`, `war`, `sourceLevel`, `minHeapSize`, `maxHeapSize`, `extraSourceDirs`, etc.), the `devMode { }` block, and the `gwtCompile` / `gwtDevMode` task names are unchanged.
-- ⚠️ **Breaking**: The `compiler { }`, `superDev { }` and `gwtTest { }` blocks and the `gwtSuperDev` task from `org.docstr.gwt` are no longer available. Default `gwtVersion` remains `2.12.1`.
+- ✅ **Compatible DSL**: Common options (`gwtVersion`, `modules`, `war`, `sourceLevel`, `minHeapSize`, `maxHeapSize`, `extraSourceDirs`, etc.), the `compiler { }` block (`strict`, `optimize`, `draftCompile`, ...; applied to both `gwtCompile` and `gwtTestCompile`), the `devMode { }` block, and the `gwtCompile` / `gwtDevMode` task names are unchanged.
+- ⚠️ **Breaking**: The `superDev { }` and `gwtTest { }` blocks and the `gwtSuperDev` task from `org.docstr.gwt` are no longer available. Default `gwtVersion` remains `2.12.1`.
 
 ### 2.2.9.5
 - ✨ **Custom Web Port Support**: Added `gwt.test.webPort` property to allow manual port assignment in multi-module environments.

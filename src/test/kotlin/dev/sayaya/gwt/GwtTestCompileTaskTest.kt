@@ -27,6 +27,17 @@ class GwtTestCompileTaskTest : DescribeSpec({
             dependencyNames shouldContain "gwtGenerateTestHtml"
         }
     }
+    describe("GwtTestCompileTask의 compiler 옵션 적용") {
+        it("compiler.strict가 true이면 gwtTestCompile 인자에 -strict가 포함된다") {
+            gwtExtension.compiler.strict.set(true)
+            gwtExtension.devMode.modules.set(listOf("com.example.Test"))
+
+            val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
+            val args = task.gwtArguments()
+            args shouldContain "-strict"
+            args.last() shouldBe "com.example.Test"
+        }
+    }
     describe("GwtTestCompileTask의 sourceLevel 프로퍼티 설정") {
         context("gwt.devMode.sourceLevel과 gwt.sourceLevel이 모두 설정된 경우") {
             it("devMode의 sourceLevel을 우선적으로 사용해야 한다") {

@@ -199,6 +199,61 @@ class GwtBasePluginTest : DescribeSpec({
         }
     }
 
+    describe("compiler { } 블록") {
+        it("컴파일 전용 옵션을 gwtCompile 인자로 변환한다") {
+            gwt.modules.set(listOf("com.example.App"))
+            gwt.compiler {
+                strict.set(true)
+                closureFormattedOutput.set(false)
+                compileReport.set(true)
+                classMetadata.set(false)
+                draftCompile.set(true)
+                checkAssertions.set(false)
+                fragmentCount.set(5)
+                namespace.set("PACKAGE")
+                optimize.set(9)
+                saveSource.set(true)
+                validateOnly.set(false)
+                localWorkers.set(4)
+                saveSourceOutput.set(project.file("out/src"))
+            }
+
+            val args = (project.tasks.getByName("gwtCompile") as GwtCompileTask).gwtArguments()
+            args shouldContainAll listOf(
+                "-strict", "-XnoclosureFormattedOutput", "-compileReport", "-XnoclassMetadata",
+                "-draftCompile", "-nocheckAssertions", "-saveSource", "-novalidateOnly"
+            )
+            args[args.indexOf("-XfragmentCount") + 1] shouldBe "5"
+            args[args.indexOf("-Xnamespace") + 1] shouldBe "PACKAGE"
+            args[args.indexOf("-optimize") + 1] shouldBe "9"
+            args[args.indexOf("-localWorkers") + 1] shouldBe "4"
+            args[args.indexOf("-saveSourceOutput") + 1] shouldBe project.file("out/src").absolutePath
+            args.last() shouldBe "com.example.App"
+        }
+
+        it("strict가 false이거나 미설정이면 -strict를 전달하지 않는다") {
+            gwt.modules.set(listOf("com.example.App"))
+            val task = project.tasks.getByName("gwtCompile") as GwtCompileTask
+            task.gwtArguments().none { it.contains("strict") } shouldBe true
+
+            gwt.compiler.strict.set(false)
+            task.gwtArguments().none { it.contains("strict") } shouldBe true
+        }
+
+        it("compiler의 공통 옵션은 미설정 시 상위 gwt 값을 이어받고, 지정하면 gwtCompile에 우선 적용된다") {
+            gwt.maxHeapSize.set("1g")
+            gwt.style.set("OBFUSCATED")
+            val task = project.tasks.getByName("gwtCompile") as GwtCompileTask
+            task.gwtMaxHeapSize.get() shouldBe "1g"
+            task.style.get() shouldBe "OBFUSCATED"
+
+            gwt.compiler.maxHeapSize.set("3g")
+            gwt.compiler.style.set("PRETTY")
+            task.gwtMaxHeapSize.get() shouldBe "3g"
+            task.style.get() shouldBe "PRETTY"
+        }
+    }
+
     describe("실행 전 검증") {
         it("modules가 비어 있으면 GradleException을 던진다") {
             val task = project.tasks.getByName("gwtCompile") as GwtCompileTask

@@ -13,7 +13,7 @@ import org.gradle.api.tasks.SourceSetContainer
  * - `java` 플러그인 적용
  * - `gwt` 확장([GwtPluginExtension]) 생성 및 기본값 설정
  *   (war/deploy/gen/extra/cacheDir = `build/gwt/...`, gwtVersion = [DEFAULT_GWT_VERSION])
- * - `devMode` 공통 옵션이 미설정 시 상위 `gwt` 값을 이어받도록 convention 연결
+ * - `compiler`·`devMode` 공통 옵션이 미설정 시 상위 `gwt` 값을 이어받도록 convention 연결
  * - `gwtDev`(의존성 선언용, `implementation` 상속) / `gwtDevRuntimeClasspath`(해석용) 설정 생성
  * - 평가 후 GWT 의존성 추가: `implementation`에 `org.gwtproject:gwt` BOM과 `gwt-servlet`(또는 jakarta),
  *   `gwtDev`에 BOM과 `gwt-dev`, `gwt-user`, `gwt-codeserver`
@@ -60,6 +60,7 @@ class GwtBasePlugin : Plugin<Project> {
         extension.gen.convention(buildDir.dir("gwt/gen"))
         extension.extra.convention(buildDir.dir("gwt/extra"))
         extension.cacheDir.convention(buildDir.dir("gwt/gwt-unitCache"))
+        extension.compiler.inheritFrom(extension)
         extension.devMode.inheritFrom(extension)
         return extension
     }
@@ -85,8 +86,9 @@ class GwtBasePlugin : Plugin<Project> {
 
     private fun registerTasks(project: Project, extension: GwtPluginExtension) {
         val gwtCompile = project.tasks.register(GWT_COMPILE_TASK_NAME, GwtCompileTask::class.java) {
-            configureFrom(extension)
-            extraSourceDirs.from(extension.extraSourceDirs)
+            configureFrom(extension.compiler)
+            configureCompilerFrom(extension.compiler)
+            extraSourceDirs.from(extension.extraSourceDirs, extension.compiler.extraSourceDirs)
         }
         project.tasks.named("build") { dependsOn(gwtCompile) }
 

@@ -43,6 +43,7 @@ abstract class GwtTestCompileTask @Inject constructor() : GwtCompileTask() {
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
         configureTestClasspath(extension)
         configureFrom(extension.devMode)
+        configureCompilerFrom(extension.compiler)
         extraSourceDirs.from(extension.extraSourceDirs, extension.devMode.extraSourceDirs)
     }
 

@@ -247,9 +247,81 @@ abstract class GwtBaseTask : JavaExec() {
  */
 @CacheableTask
 abstract class GwtCompileTask : GwtBaseTask() {
+    @get:Input @get:Optional
+    abstract val closureFormattedOutput: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val compileReport: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val strict: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val classMetadata: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val draftCompile: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val checkAssertions: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val fragmentCount: Property<Int>
+
+    @get:Input @get:Optional
+    abstract val namespace: Property<String>
+
+    @get:Input @get:Optional
+    abstract val optimize: Property<Int>
+
+    @get:Input @get:Optional
+    abstract val saveSource: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val validateOnly: Property<Boolean>
+
+    @get:Input @get:Optional
+    abstract val localWorkers: Property<Int>
+
+    @get:OutputDirectory @get:Optional
+    abstract val saveSourceOutput: DirectoryProperty
+
     init {
         description = "Compiles GWT modules to JavaScript"
         mainClass.set(COMPILER_CLASS)
+    }
+
+    override fun additionalArguments(): List<String> = buildList {
+        addFlag("XclosureFormattedOutput", closureFormattedOutput)
+        addFlag("compileReport", compileReport)
+        if (strict.getOrElse(false)) add("-strict")
+        addFlag("XclassMetadata", classMetadata)
+        addFlag("draftCompile", draftCompile)
+        addFlag("checkAssertions", checkAssertions)
+        addValue("XfragmentCount", fragmentCount)
+        addValue("Xnamespace", namespace)
+        addValue("optimize", optimize)
+        addFlag("saveSource", saveSource)
+        addFlag("validateOnly", validateOnly)
+        addValue("localWorkers", localWorkers)
+        addDirectory("saveSourceOutput", saveSourceOutput)
+    }
+
+    /** `compiler { ... }`의 컴파일 전용 옵션을 연결합니다. 공통 옵션은 [configureFrom]으로 따로 연결합니다. */
+    fun configureCompilerFrom(options: GwtCompilerOptions) {
+        closureFormattedOutput.set(options.closureFormattedOutput)
+        compileReport.set(options.compileReport)
+        strict.set(options.strict)
+        classMetadata.set(options.classMetadata)
+        draftCompile.set(options.draftCompile)
+        checkAssertions.set(options.checkAssertions)
+        fragmentCount.set(options.fragmentCount)
+        namespace.set(options.namespace)
+        optimize.set(options.optimize)
+        saveSource.set(options.saveSource)
+        validateOnly.set(options.validateOnly)
+        localWorkers.set(options.localWorkers)
+        saveSourceOutput.set(options.saveSourceOutput)
     }
 
     companion object {

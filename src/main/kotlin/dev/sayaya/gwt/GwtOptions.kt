@@ -80,6 +80,58 @@ abstract class GwtOptions {
 }
 
 /**
+ * `gwt { compiler { ... } }` 블록의 옵션입니다 (`com.google.gwt.dev.Compiler` 전용 인자).
+ *
+ * ## 역할
+ * - 아래 컴파일 전용 옵션은 `gwtCompile`과 `gwtTestCompile` 모두에 적용됩니다.
+ * - [GwtOptions]의 공통 옵션은 `gwtCompile`에만 적용되며, 지정하지 않으면 상위 `gwt { ... }` 값을 이어받습니다.
+ *   (`gwtTestCompile`의 공통 옵션은 `devMode { ... }`를 따릅니다.)
+ *
+ * ## 주의사항
+ * - 값을 설정하지 않은 옵션은 인자로 전달하지 않습니다. [strict]는 `true`일 때만 `-strict`를 전달합니다.
+ */
+abstract class GwtCompilerOptions : GwtOptions() {
+    /** `-XclosureFormattedOutput` / `-XnoclosureFormattedOutput` */
+    abstract val closureFormattedOutput: Property<Boolean>
+
+    /** `-compileReport` / `-nocompileReport` */
+    abstract val compileReport: Property<Boolean>
+
+    /** `-strict`: 컴파일 오류가 있는 유닛을 건너뛰지 않고 실패 처리 (`true`일 때만 전달) */
+    abstract val strict: Property<Boolean>
+
+    /** `-XclassMetadata` / `-XnoclassMetadata` */
+    abstract val classMetadata: Property<Boolean>
+
+    /** `-draftCompile` / `-nodraftCompile` */
+    abstract val draftCompile: Property<Boolean>
+
+    /** `-checkAssertions` / `-nocheckAssertions` */
+    abstract val checkAssertions: Property<Boolean>
+
+    /** `-XfragmentCount`: 코드 분할 조각 수 */
+    abstract val fragmentCount: Property<Int>
+
+    /** `-Xnamespace`: NONE, PACKAGE */
+    abstract val namespace: Property<String>
+
+    /** `-optimize`: 최적화 수준 (0~9) */
+    abstract val optimize: Property<Int>
+
+    /** `-saveSource` / `-nosaveSource` */
+    abstract val saveSource: Property<Boolean>
+
+    /** `-validateOnly` / `-novalidateOnly` */
+    abstract val validateOnly: Property<Boolean>
+
+    /** `-localWorkers`: 병렬 순열 컴파일 워커 수 */
+    abstract val localWorkers: Property<Int>
+
+    /** `-saveSourceOutput`: 소스 저장 디렉토리 */
+    abstract val saveSourceOutput: DirectoryProperty
+}
+
+/**
  * `gwt { devMode { ... } }` 블록의 옵션입니다.
  *
  * ## 역할
