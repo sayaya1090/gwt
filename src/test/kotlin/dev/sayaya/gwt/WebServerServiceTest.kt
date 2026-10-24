@@ -1,9 +1,12 @@
 package dev.sayaya.gwt
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
@@ -99,6 +102,53 @@ class WebServerServiceTest : DescribeSpec({
             } finally {
                 socket.close()
                 tempDir.deleteRecursively()
+            }
+        }
+
+        it("서빙 루트 밖의 파일은 경로 조작(.., %2e%2e)으로도 제공하지 않아야 한다") {
+            val base = createTempDirectory("webserver-traversal-test").toFile()
+            val root = File(base, "www").apply { mkdirs() }
+            File(root, "ok.txt").writeText("PUBLIC")
+            File(base, "secret.txt").writeText("TOP-SECRET")
+
+            val service = project.gradle.sharedServices.registerIfAbsent("traversalServer", WebServerService::class.java) {
+                parameters.contentRoot.from(root)
+                parameters.port.set(0)
+            }.get()
+
+            fun rawGet(path: String): String = java.net.Socket("127.0.0.1", service.getPort()).use { socket ->
+                socket.soTimeout = 5000
+                socket.getOutputStream().write("GET $path HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n".toByteArray())
+                socket.getInputStream().readBytes().toString(Charsets.UTF_8)
+            }
+
+            try {
+                rawGet("/ok.txt") shouldContain "PUBLIC"
+                listOf("/../secret.txt", "/%2e%2e/secret.txt", "/sub/../../secret.txt", "/..%2fsecret.txt").forEach { path ->
+                    withClue(path) { rawGet(path) shouldNotContain "TOP-SECRET" }
+                }
+            } finally {
+                service.close()
+                base.deleteRecursively()
+            }
+        }
+
+        listOf("미지정" to null, "0" to 0).forEach { (label, requested) ->
+            it("포트가 $label 이면 실제로 바인딩된 포트를 반환하고 접속할 수 있어야 한다") {
+                val tempDir = createTempDirectory("webserver-port-test").toFile()
+                File(tempDir, "index.html").writeText("PORT-OK")
+                val service = project.gradle.sharedServices.registerIfAbsent("portServer-$label", WebServerService::class.java) {
+                    parameters.contentRoot.from(tempDir)
+                    if (requested != null) parameters.port.set(requested)
+                }.get()
+                try {
+                    val port = service.getPort()
+                    (port > 0) shouldBe true
+                    URI.create("http://127.0.0.1:$port/index.html").toURL().readText() shouldBe "PORT-OK"
+                } finally {
+                    service.close()
+                    tempDir.deleteRecursively()
+                }
             }
         }
 

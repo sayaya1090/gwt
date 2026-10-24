@@ -389,6 +389,9 @@ This project is available under the terms specified in the project’s license f
 - 🧩 **Multi-module test servers**: The test web server build service is now keyed by project path (`gwtWebServer:<path>` for subprojects), so subprojects with the same name (e.g. `:a:client`, `:b:client`) no longer share one server and serve each other's `war`.
 - 🚦 **Fail fast on missing pages (`gwt-test`)**: `GwtTestSpec` now fails immediately with the URL and HTTP status when the `@GwtHtml` page returns 4xx/5xx, instead of timing out later on an empty page.
 - 🧹 Test tasks no longer get `-Dio.netty.leakDetection.level=PARANOID` (it did not affect the server, which runs in the Gradle daemon). Server start/stop messages now go through the Gradle logger (`lifecycle`).
+- 🔒 **Test server path traversal fix**: The built-in test web server no longer serves files outside its content roots for requests like `/../secret.txt` (previously returned `200` with the file).
+- 🔌 **No port race on startup**: With `webPort` unset or `0`, the test server now lets Netty pick a free port and reports the actually bound port, instead of probing a free port first and binding it again.
+- ⚠️ **Missing `gwt.junit.remoteUrl` warning (`gwt-test`)**: `GwtTestSpec` now prints a warning to stderr when the property is missing and it falls back to `http://localhost:8080/`.
 
 ### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.

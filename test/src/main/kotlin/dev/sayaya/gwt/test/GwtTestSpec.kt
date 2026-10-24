@@ -134,12 +134,17 @@ open class GwtTestSpec(
      * 테스트할 HTML URL을 생성합니다.
      * 
      * 시스템 프로퍼티 `gwt.junit.remoteUrl`을 우선적으로 사용하며,
-     * 설정되지 않은 경우 기본값으로 `http://localhost:8080/`을 사용합니다.
+     * 설정되지 않은 경우 stderr에 경고를 남기고 기본값 [DEFAULT_REMOTE_URL]을 사용합니다.
      * 
      * @return 생성된 HTTP URL 문자열
      */
     internal fun generateUrl(): String {
-        val remoteUrl = System.getProperty("gwt.junit.remoteUrl") ?: "http://localhost:8080/"
+        val remoteUrl = System.getProperty("gwt.junit.remoteUrl") ?: DEFAULT_REMOTE_URL.also {
+            System.err.println(
+                "[gwt-test] WARNING: 'gwt.junit.remoteUrl' 시스템 프로퍼티가 없어 $it 을(를) 사용합니다. " +
+                    "테스트 웹 서버는 dev.sayaya.gwt 플러그인이 적용된 test 태스크에서만 자동으로 실행됩니다."
+            )
+        }
         val baseUrl = if (remoteUrl.endsWith("/")) remoteUrl else "$remoteUrl/"
         // htmlPath가 /로 시작하면 제거하여baseUrl과 중복 방지
         val path = if (htmlPath.startsWith("/")) htmlPath.substring(1) else htmlPath
@@ -203,5 +208,10 @@ open class GwtTestSpec(
      */
     fun Page.clearConsoleLogs() {
         consoleLogs.clear()
+    }
+
+    companion object {
+        /** `gwt.junit.remoteUrl`이 없을 때 사용하는 기본 URL */
+        const val DEFAULT_REMOTE_URL = "http://localhost:8080/"
     }
 }

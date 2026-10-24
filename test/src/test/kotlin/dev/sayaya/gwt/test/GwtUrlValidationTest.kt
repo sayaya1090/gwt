@@ -3,6 +3,7 @@ package dev.sayaya.gwt.test
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.io.File
 
 @GwtHtml("test.html")
@@ -27,6 +28,17 @@ class GwtUrlValidationTest : BehaviorSpec({
             System.clearProperty("gwt.junit.remoteUrl")
             Then("기본값(http://localhost:8080/...) 반환") {
                 spec.generateUrl() shouldBe "http://localhost:8080/test.html"
+            }
+            Then("플러그인 없이 실행 중일 수 있으므로 stderr에 경고를 남겨야 한다") {
+                val captured = java.io.ByteArrayOutputStream()
+                val original = System.err
+                System.setErr(java.io.PrintStream(captured, true, Charsets.UTF_8))
+                try {
+                    spec.generateUrl()
+                } finally {
+                    System.setErr(original)
+                }
+                captured.toString(Charsets.UTF_8) shouldContain "gwt.junit.remoteUrl"
             }
         }
 

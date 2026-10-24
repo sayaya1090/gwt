@@ -5,10 +5,10 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.runBlocking
 import org.gradle.api.services.BuildService
 import org.gradle.api.logging.Logging
 import java.io.File
-import java.net.ServerSocket
 
 /**
  * GWT 테스트를 위한 Ktor 기반 내장 웹 서버 서비스입니다.
@@ -32,8 +32,9 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
 
     private fun startServer() {
         val roots = parameters.contentRoot.files.filter { it.exists() && it.isDirectory }
-        val requestedPort = parameters.port.getOrElse(ServerSocket(0).use { it.localPort })
-        val targetPort = if (requestedPort == 0) ServerSocket(0).use { it.localPort } else requestedPort
+        // 0(또는 미지정)이면 Netty가 직접 빈 포트를 고른다. 미리 빈 포트를 찾아 두었다가 다시 바인딩하면
+        // 그 사이 다른 프로세스가 포트를 가져갈 수 있다(TOCTOU).
+        val requestedPort = parameters.port.getOrElse(0)
 
         // 서버 기동 시 서빙 경로를 LIFECYCLE 수준으로 출력
         logger.lifecycle("Starting GWT Test Server...")
@@ -42,7 +43,7 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
         }
 
         try {
-            server = embeddedServer(Netty, port = targetPort, host = "127.0.0.1") {
+            server = embeddedServer(Netty, port = requestedPort, host = "127.0.0.1") {
                 routing {
                     // 수동 경로 탐색 (DuplicatePluginException 방지)
                     get("/{staticPath...}") {
@@ -66,7 +67,7 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
                 }
             }.start(wait = false)
 
-            assignedPort = targetPort
+            assignedPort = runBlocking { server.engine.resolvedConnectors() }.first().port
             logger.lifecycle("GWT Test Server is running at http://127.0.0.1:{}", assignedPort)
         } catch (e: Exception) {
             logger.error("Failed to start GWT Test Server: {}", e.message)
@@ -74,10 +75,19 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
         }
     }
 
+    /**
+     * 등록된 루트를 순서대로 탐색해 [relativePath]에 해당하는 파일을 찾습니다.
+     *
+     * 정규화한 경로가 루트 밖으로 벗어나면(`..` 등) 해당 루트에서는 찾지 않습니다.
+     * 심볼릭 링크는 해석하지 않으므로 루트 안의 링크는 그대로 제공됩니다.
+     */
     private fun findFile(roots: List<File>, relativePath: String): File? {
         for (root in roots) {
-            val file = File(root, relativePath)
-            if (file.exists() && file.isFile) return file
+            val base = root.absoluteFile.toPath().normalize()
+            val target = base.resolve(relativePath).normalize()
+            if (!target.startsWith(base)) continue
+            val file = target.toFile()
+            if (file.isFile) return file
         }
         return null
     }
