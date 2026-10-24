@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     // Playwright
-    api("com.microsoft.playwright:playwright:1.63.0")
+    api("com.microsoft.playwright:playwright:1.64.0")
 
     // Kotest
     api("io.kotest:kotest-runner-junit5:6.2.6")
@@ -22,7 +22,7 @@ dependencies {
     api(kotlin("stdlib"))
     api(kotlin("reflect"))
 
-    api("com.google.code.gson:gson:2.14.0")
+    api("com.google.code.gson:gson:2.15.0")
 
     // Gradle Testing
     api(gradleTestKit())

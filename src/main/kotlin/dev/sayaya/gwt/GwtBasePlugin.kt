@@ -138,7 +138,7 @@ class GwtBasePlugin : Plugin<Project> {
         const val GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME = "gwtDevRuntimeClasspath"
         const val GWT_COMPILE_TASK_NAME = "gwtCompile"
         const val GWT_DEV_MODE_TASK_NAME = "gwtDevMode"
-        const val DEFAULT_GWT_VERSION = "2.12.1"
+        const val DEFAULT_GWT_VERSION = "2.13.1"
 
         /** 테스트 JVM의 `gwt.args` 값: 상위 `gwt`의 war/deploy/extra를 `-name <절대경로>` 형식으로 공백 연결합니다. */
         internal fun gwtTestArguments(extension: GwtPluginExtension): String = listOf(

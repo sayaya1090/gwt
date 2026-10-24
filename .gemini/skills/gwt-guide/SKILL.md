@@ -8,9 +8,9 @@
 |-----------|---------|------|
 | Gradle | 9.3+    | 빌드 시스템 |
 | Kotlin | 2.4.21  | 플러그인 구현 언어 |
-| GWT SDK | 2.12.1 (기본값, `gwt.gwtVersion`으로 변경) | gwt-dev / gwt-user / gwt-codeserver |
+| GWT SDK | 2.13.1 (기본값, `gwt.gwtVersion`으로 변경) | gwt-dev / gwt-user / gwt-codeserver |
 | Ktor | 3.6.0   | 테스트용 내장 웹서버 (Netty) |
-| Playwright | 1.63.0  | 브라우저 자동화 테스트 |
+| Playwright | 1.64.0  | 브라우저 자동화 테스트 |
 | Kotest | 6.2.6   | 테스트 프레임워크 |
 | sayaya-gwt | 2.3.0   | 현재 프로젝트 버전 |
 

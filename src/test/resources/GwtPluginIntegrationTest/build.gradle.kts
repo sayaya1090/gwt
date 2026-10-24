@@ -17,7 +17,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.48")
 
     testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
-    testImplementation("com.microsoft.playwright:playwright:1.63.0")
+    testImplementation("com.microsoft.playwright:playwright:1.64.0")
 }
 
 tasks {

@@ -292,9 +292,9 @@ class UserInterfaceTest : GwtTestSpec({
 
 ### Gradle Plugin
 
-- Gradle 9.3+ (verified with 9.3.0 and 9.4.1)
+- Gradle 9.3+ (verified with 9.3.0, 9.4.1 and 9.8.2)
 - Java 17+
-- GWT 2.12+ (default `gwtVersion` 2.12.1; verified with 2.13.0 and 2.13.1)
+- GWT 2.12+ (default `gwtVersion` 2.13.1; verified with 2.13.0 and 2.13.1)
 - No third-party GWT Gradle plugin required (`org.docstr.gwt` is no longer used)
 
 ### kotest + playwright Test Library
@@ -381,6 +381,10 @@ This project is available under the terms specified in the project’s license f
 - [Lombok](https://projectlombok.org/) – Java annotation processor
 
 ## 📝 Changelog
+
+### Unreleased
+- ⚠️ **Default GWT version**: The default `gwtVersion` is now `2.13.1` (was `2.12.1`). Set `gwt { gwtVersion = "2.12.1" }` to keep the previous SDK.
+- ⬆️ **Dependency updates (`gwt-test`)**: Playwright `1.64.0`, Gson `2.15.0`.
 
 ### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.
