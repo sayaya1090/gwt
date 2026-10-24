@@ -1,5 +1,6 @@
 package dev.sayaya.gwt
 
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContain
@@ -292,6 +293,19 @@ class GwtBasePluginTest : DescribeSpec({
             val test = project.tasks.getByName("test") as org.gradle.api.tasks.testing.Test
             val main = project.extensions.getByType(SourceSetContainer::class.java).getByName("main")
             test.classpath.files shouldContainAll main.java.srcDirs
+            project.configurations.getByName("testImplementation").extendsFrom.map { it.name } shouldContain
+                GwtBasePlugin.GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME
+        }
+    }
+
+    describe("Test 태스크와 configuration 계층") {
+        it("테스트 클래스패스를 먼저 해석한 뒤 test 태스크가 구성되어도 오류 없이 gwtDevRuntimeClasspath를 상속한다") {
+            project.evaluate()
+            listOf("implementation", GwtBasePlugin.GWT_DEV_CONFIGURATION_NAME).forEach {
+                project.configurations.getByName(it).dependencies.clear()
+            }
+            project.configurations.getByName("testRuntimeClasspath").resolve()
+            shouldNotThrowAny { project.tasks.getByName("test") }
             project.configurations.getByName("testImplementation").extendsFrom.map { it.name } shouldContain
                 GwtBasePlugin.GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME
         }

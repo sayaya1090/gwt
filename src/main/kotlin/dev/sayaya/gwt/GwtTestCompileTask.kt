@@ -1,8 +1,6 @@
 package dev.sayaya.gwt
 
 import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.SourceSetContainer
 import javax.inject.Inject
 
 /**
@@ -14,7 +12,7 @@ import javax.inject.Inject
  *
  * ## 특징
  * - devMode 설정 우선 적용 (fallback: base 설정)
- * - 테스트 소스/리소스/클래스패스 자동 포함 (`gwt.devMode.extraSourceDirs`에 추가)
+ * - 테스트 소스/리소스/클래스패스 자동 포함 ([GwtTestPlugin]이 `gwt.devMode.extraSourceDirs`에 추가)
  * - HTML 호스트 파일 생성 태스크에 자동 의존
  *
  * ## 사용 예시
@@ -41,29 +39,8 @@ abstract class GwtTestCompileTask @Inject constructor() : GwtCompileTask() {
         dependsOn("gwtGenerateTestHtml")
 
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-        configureTestClasspath(extension)
         configureFrom(extension.devMode)
         configureCompilerFrom(extension.compiler)
         extraSourceDirs.from(extension.extraSourceDirs, extension.devMode.extraSourceDirs)
-    }
-
-    /**
-     * 메인·테스트 소스와 클래스패스를 devMode의 extraSourceDirs에 추가합니다.
-     */
-    private fun configureTestClasspath(extension: GwtPluginExtension) {
-        val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
-        val mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-        val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
-
-        extension.devMode.extraSourceDirs.from(
-            mainSourceSet.allSource.sourceDirectories,
-            mainSourceSet.resources.sourceDirectories,
-            mainSourceSet.output,
-
-            testSourceSet.allSource.sourceDirectories,
-            testSourceSet.resources.sourceDirectories,
-            testSourceSet.output,
-            testSourceSet.runtimeClasspath
-        )
     }
 }

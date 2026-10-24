@@ -100,11 +100,15 @@ class GwtBasePlugin : Plugin<Project> {
         val main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
         val test = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
         val gwtDevRuntimeClasspath = project.configurations.getByName(GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME)
+        // 구성 계층은 Test 태스크가 생성(configureEach)될 때가 아니라 평가 직후 한 번에 연결한다.
+        // Test 태스크가 의존성 해석 이후에 늦게 생성되면 계층 변경이 실패하기 때문이다. names는 태스크를 생성하지 않는다.
+        project.tasks.withType(Test::class.java).names.forEach { testName ->
+            project.configurations.findByName("${testName}Implementation")?.extendsFrom(gwtDevRuntimeClasspath)
+        }
         project.tasks.withType(Test::class.java).configureEach {
             minHeapSize = extension.devMode.minHeapSize.getOrElse(GwtBaseTask.DEFAULT_MIN_HEAP_SIZE)
             maxHeapSize = extension.devMode.maxHeapSize.getOrElse(GwtBaseTask.DEFAULT_MAX_HEAP_SIZE)
 
-            project.configurations.findByName("${name}Implementation")?.extendsFrom(gwtDevRuntimeClasspath)
             classpath = project.files(
                 main.allSource.srcDirs, main.output.classesDirs, main.output.resourcesDir,
                 test.allSource.srcDirs, test.output.classesDirs, test.output.resourcesDir

@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testfixtures.ProjectBuilder
@@ -60,27 +61,27 @@ class GwtLombokPluginTest : DescribeSpec({
             val lombokJar = addAnnotationProcessor("lombok-1.18.30.jar").single()
             project.evaluate()
             val gwtTask = project.getGwtTasks().first()
-            gwtTask.jvmArgs shouldContain "-javaagent:${lombokJar.absolutePath}=ECJ"
+            gwtTask.agentArgs() shouldContain "-javaagent:${lombokJar.absolutePath}=ECJ"
         }
 
         it("lombok 의존성이 없을 때는 javaagent를 설정하지 않아야 한다") {
             addAnnotationProcessor("other-processor.jar")
             project.evaluate()
             val gwtTask = project.getGwtTasks().first()
-            gwtTask.jvmArgs.any { it.startsWith("-javaagent:") } shouldBe false
+            gwtTask.agentArgs().any { it.startsWith("-javaagent:") } shouldBe false
         }
 
         it("annotationProcessor 설정이 비어있을 때는 javaagent를 설정하지 않아야 한다") {
             project.evaluate()
             val gwtTask = project.getGwtTasks().first()
-            gwtTask.jvmArgs.any { it.startsWith("-javaagent:") } shouldBe false
+            gwtTask.agentArgs().any { it.startsWith("-javaagent:") } shouldBe false
         }
 
         it("여러 개의 lombok 의존성이 있을 때 첫 번째 것을 javaagent로 설정해야 한다") {
             val lombokJars = addAnnotationProcessor("lombok-1.18.30.jar", "lombok-1.18.32.jar")
             project.evaluate()
             val gwtTask = project.getGwtTasks().first()
-            val hasLombokAgent = gwtTask.jvmArgs.any { arg ->
+            val hasLombokAgent = gwtTask.agentArgs().any { arg ->
                 arg.startsWith("-javaagent:") && lombokJars.any { jar -> arg.contains(jar.name) }
             }
             hasLombokAgent shouldBe true
@@ -92,7 +93,14 @@ class GwtLombokPluginTest : DescribeSpec({
             project.evaluate()
             // annotationProcessorConfig가 null이므로 lombok은 null이 되고, jvmArgs는 설정되지 않아야 한다.
             val gwtTask = project.getGwtTasks().first()
-            gwtTask.jvmArgs.any { it.startsWith("-javaagent:") } shouldBe false
+            gwtTask.agentArgs().any { it.startsWith("-javaagent:") } shouldBe false
+        }
+
+        it("평가하고 GWT 태스크를 구성해도 annotationProcessor 설정을 해석하지 않아야 한다") {
+            addAnnotationProcessor("lombok-1.18.30.jar")
+            project.evaluate()
+            project.getGwtTasks()
+            project.configurations.getByName("annotationProcessor").state shouldBe Configuration.State.UNRESOLVED
         }
 
         it("annotationProcessor 설정이 없어도 실패하지 않아야 한다") {
@@ -105,5 +113,7 @@ class GwtLombokPluginTest : DescribeSpec({
         private fun File.toPathString(): String = this.path.replace(File.separatorChar, '/')
         private fun Project.evaluate() = (project as ProjectInternal).evaluate()
         private fun Project.getGwtTasks(): List<GwtBaseTask> = project.tasks.withType(GwtBaseTask::class.java).toList()
+        /** 직접 지정한 jvmArgs와 실행 시점 인자 프로바이더가 만드는 JVM 인자를 합친다. */
+        private fun GwtBaseTask.agentArgs(): List<String> = jvmArgs.orEmpty() + jvmArgumentProviders.flatMap { it.asArguments() }
     }
 }

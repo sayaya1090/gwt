@@ -392,6 +392,9 @@ This project is available under the terms specified in the project’s license f
 - 🔒 **Test server path traversal fix**: The built-in test web server no longer serves files outside its content roots for requests like `/../secret.txt` (previously returned `200` with the file).
 - 🔌 **No port race on startup**: With `webPort` unset or `0`, the test server now lets Netty pick a free port and reports the actually bound port, instead of probing a free port first and binding it again.
 - ⚠️ **Missing `gwt.junit.remoteUrl` warning (`gwt-test`)**: `GwtTestSpec` now prints a warning to stderr when the property is missing and it falls back to `http://localhost:8080/`.
+- 🐢 **No dependency resolution at configuration time (Lombok)**: `dev.sayaya.gwt.lombok` now locates the Lombok jar when a GWT task runs, instead of resolving `annotationProcessor` during `afterEvaluate`.
+- 🧹 **No duplicate GWT classpath entries**: `gwtTestCompile` no longer modifies `gwt.devMode.extraSourceDirs` when it is created; the test plugin adds only the test source directories and the test runtime classpath once (main sources/outputs are already on the GWT classpath).
+- 🛠️ **Late `Test` task creation fixed**: `<test>Implementation` now extends `gwtDevRuntimeClasspath` right after evaluation instead of when the `Test` task is created, so creating the task after the test classpath was resolved no longer fails with `Could not create task ':test'`.
 
 ### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.

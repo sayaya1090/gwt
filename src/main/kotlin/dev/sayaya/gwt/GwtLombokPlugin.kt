@@ -2,7 +2,10 @@ package dev.sayaya.gwt
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.process.CommandLineArgumentProvider
 
 /**
  * GWT를 위한 Lombok 어노테이션 처리를 설정하는 플러그인
@@ -30,16 +33,29 @@ class GwtLombokPlugin : Plugin<Project> {
             }
         }
         project.afterEvaluate {
-            val annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
-            val lombok = annotationProcessorConfig?.find { dependency ->
-                // Lombok jar 파일명 패턴: lombok-1.18.30.jar, lombok-1.18.30-sources.jar 등
-                dependency.name.matches(Regex("^lombok-\\d+\\.\\d+\\.\\d+.*\\.jar$"))
-            }
-            if (lombok != null) {
-                project.tasks.withType(GwtBaseTask::class.java).configureEach {
-                    jvmArgs = jvmArgs + "-javaagent:${lombok}=ECJ"
-                }
+            // 설정 시점에 annotationProcessor를 해석하지 않도록, Lombok jar 탐색은 태스크 실행 시점으로 미룬다.
+            val annotationProcessor = project.configurations.findByName("annotationProcessor") ?: return@afterEvaluate
+            project.tasks.withType(GwtBaseTask::class.java).configureEach {
+                jvmArgumentProviders.add(LombokAgentArgumentProvider(annotationProcessor))
             }
         }
+    }
+}
+
+/**
+ * [processorPath]에서 첫 번째 Lombok jar를 찾아 `-javaagent:<jar>=ECJ` 인자를 실행 시점에 만듭니다.
+ * Lombok이 없으면 인자를 추가하지 않습니다.
+ */
+internal class LombokAgentArgumentProvider(
+    @get:Classpath val processorPath: FileCollection
+) : CommandLineArgumentProvider {
+    override fun asArguments(): Iterable<String> =
+        processorPath.firstOrNull { LOMBOK_JAR.matches(it.name) }
+            ?.let { listOf("-javaagent:${it.absolutePath}=ECJ") }
+            ?: emptyList()
+
+    private companion object {
+        // Lombok jar 파일명 패턴: lombok-1.18.30.jar, lombok-1.18.30-sources.jar 등
+        val LOMBOK_JAR = Regex("^lombok-\\d+\\.\\d+\\.\\d+.*\\.jar$")
     }
 }

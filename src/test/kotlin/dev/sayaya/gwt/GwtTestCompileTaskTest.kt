@@ -26,6 +26,23 @@ class GwtTestCompileTaskTest : DescribeSpec({
             val dependencyNames = task.taskDependencies.getDependencies(task).map { it.name }
             dependencyNames shouldContain "gwtGenerateTestHtml"
         }
+
+        it("태스크를 구성해도 gwt.devMode.extraSourceDirs를 변경하지 않아야 한다") {
+            val before = gwtExtension.devMode.extraSourceDirs.from.size
+            project.tasks.getByName("gwtTestCompile")
+            gwtExtension.devMode.extraSourceDirs.from.size shouldBe before
+        }
+
+        it("테스트 소스 디렉토리는 gwtTestCompile의 extraSourceDirs에 포함되어야 한다") {
+            val testSrc = project.file("src/test/java").apply { mkdirs() }
+            (project as org.gradle.api.internal.project.ProjectInternal).evaluate()
+            // 저장소가 없는 ProjectBuilder 환경에서 클래스패스를 해석할 수 있도록 원격 GWT 의존성은 비운다.
+            listOf("implementation", GwtBasePlugin.GWT_DEV_CONFIGURATION_NAME).forEach {
+                project.configurations.getByName(it).dependencies.clear()
+            }
+            val task = project.tasks.getByName("gwtTestCompile") as GwtTestCompileTask
+            task.extraSourceDirs.files shouldContain testSrc
+        }
     }
     describe("GwtTestCompileTask의 compiler 옵션 적용") {
         it("compiler.strict가 true이면 gwtTestCompile 인자에 -strict가 포함된다") {

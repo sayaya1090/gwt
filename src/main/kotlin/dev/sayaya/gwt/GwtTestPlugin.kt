@@ -122,35 +122,24 @@ class GwtTestPlugin : Plugin<Project> {
     /**
      * GWT 개발 모드의 extraSourceDirs를 구성합니다.
      *
-     * 테스트 소스와 리소스를 extension.devMode.extraSourceDirs에 추가하여
-     * 개발 모드에서도 테스트 코드를 사용할 수 있도록 설정합니다.
+     * 테스트 소스·리소스 디렉토리와 테스트 런타임 클래스패스(테스트·main 출력과 의존성 포함)를
+     * extension.devMode.extraSourceDirs에 추가하여, gwtDevMode와 gwtTestCompile이 테스트 코드를 사용할 수 있게 합니다.
+     * main 소스 디렉토리와 출력은 [GwtBaseTask]가 이미 클래스패스에 넣으므로 다시 추가하지 않습니다.
      *
-     * **중요:** afterEvaluate에서 호출되어 사용자 설정 이후에 적용됩니다.
-     *           사용자가 이미 extraSourceDirs를 설정했다면, 여기서 추가로 병합됩니다.
+     * 지연 평가되는 FileCollection이므로 사용자가 나중에 추가한 extraSourceDirs와도 합산됩니다.
      */
     private fun configureGwtDevMode(project: Project) {
         project.tasks.named("gwtDevMode", GwtDevModeTask::class.java).configure {
             dependsOn("gwtGenerateTestHtml")
         }
 
-        project.afterEvaluate {
-            val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-            val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
-            val mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-            val testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME)
-
-            extension.devMode.extraSourceDirs.from(
-                mainSourceSet.allSource.sourceDirectories,
-                mainSourceSet.resources.sourceDirectories,
-                mainSourceSet.output,
-                mainSourceSet.runtimeClasspath,
-
-                testSourceSet.allSource.sourceDirectories,
-                testSourceSet.resources.sourceDirectories,
-                testSourceSet.output,
-                testSourceSet.runtimeClasspath
-            )
-        }
+        val extension = project.extensions.getByType(GwtPluginExtension::class.java)
+        val testSourceSet = project.extensions.getByType(SourceSetContainer::class.java)
+            .getByName(SourceSet.TEST_SOURCE_SET_NAME)
+        extension.devMode.extraSourceDirs.from(
+            testSourceSet.allSource.sourceDirectories,
+            testSourceSet.runtimeClasspath
+        )
     }
 
     /**
