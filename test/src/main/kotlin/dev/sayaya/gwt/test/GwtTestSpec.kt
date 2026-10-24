@@ -107,7 +107,27 @@ open class GwtTestSpec(
      */
     internal fun loadHtmlFile() {
         val url = generateUrl()
-        if (::page.isInitialized) page.navigate(url)
+        if (::page.isInitialized) verifyNavigation(url, page.navigate(url)?.status())
+    }
+
+    /**
+     * HTML 페이지 이동 결과를 검증합니다.
+     *
+     * 4xx/5xx 응답이면 즉시 실패시켜, 빈 페이지 때문에 이후 단계에서 원인을 알기 어려운
+     * TimeoutError나 로그 누락으로 번지지 않게 합니다. 응답이 없는 경우(`null`)는 통과시킵니다.
+     *
+     * @param url 이동한 URL
+     * @param status HTTP 상태 코드. 응답이 없으면 `null`
+     * @throws IllegalStateException 상태 코드가 400 이상인 경우
+     */
+    internal fun verifyNavigation(url: String, status: Int?) {
+        if (status != null && status >= 400) {
+            throw IllegalStateException(
+                "@GwtHtml 페이지를 불러오지 못했습니다: HTTP $status ($url). " +
+                    "@GwtHtml 경로는 테스트 웹 서버의 서빙 루트(gwt.devMode.war, 기본 src/test/webapp) 기준 상대 경로여야 합니다 " +
+                    "(예: @GwtHtml(\"test.html\"))."
+            )
+        }
     }
 
     /**
@@ -151,7 +171,7 @@ open class GwtTestSpec(
 
     /**
      * 브라우저 콘솔 로그에 특정 값이 포함되어 있는지 검증합니다.
-     * 검증 후 콘솔 로그를 자동으로 클리어합니다.
+     * 검증 후에도 콘솔 로그는 유지됩니다. 필요하면 [clearConsoleLogs]로 지우세요.
      *
      * @param expected 로그에 포함되어야 하는 값
      * @throws AssertionError 로그에 해당 값이 없으면 예외 발생
@@ -162,7 +182,7 @@ open class GwtTestSpec(
 
     /**
      * 브라우저 콘솔 로그에 특정 값이 포함되어 있지 않은지 검증합니다.
-     * 검증 후 콘솔 로그를 자동으로 클리어합니다.
+     * 검증 후에도 콘솔 로그는 유지됩니다. 필요하면 [clearConsoleLogs]로 지우세요.
      *
      * @param unexpected 로그에 포함되지 않아야 하는 값
      * @throws AssertionError 로그에 해당 값이 있으면 예외 발생

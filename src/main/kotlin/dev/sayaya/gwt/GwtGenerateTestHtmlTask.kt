@@ -2,6 +2,7 @@ package dev.sayaya.gwt
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -9,10 +10,10 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFiles
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.w3c.dom.Document
@@ -96,10 +97,24 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     @get:Input
     abstract val titleSuffix: Property<String>
 
+    /**
+     * 모듈 `.gwt.xml`을 찾을 디렉토리 목록 (앞쪽이 우선).
+     *
+     * 기본값은 모든 소스셋의 리소스·소스 디렉토리이며 설정 시점에 지연 연결됩니다.
+     * 실행 시점에 `project`를 참조하지 않아 Configuration Cache와 호환됩니다.
+     */
+    @get:Internal
+    abstract val moduleSearchDirs: ConfigurableFileCollection
+
     init {
         group = "GWT"
         description = "Generates HTML host files for GWT test modules"
         titleSuffix.convention("Test")
+        project.extensions.findByType(SourceSetContainer::class.java)?.let { sourceSets ->
+            moduleSearchDirs.from(project.provider {
+                sourceSets.flatMap { it.resources.srcDirs + it.allSource.srcDirs }
+            })
+        }
     }
 
     /**
@@ -123,9 +138,8 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     val outputHtmlFiles: Provider<List<File>>
         get() = modules.map { moduleList ->
             moduleList.map { module ->
-                val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
                 val packagePath = module.replace('.', '/')
-                val xmlFile = findXmlFileInSourceSets(sourceSets, "$packagePath.gwt.xml")
+                val xmlFile = findXmlFile("$packagePath.gwt.xml")
 
                 val moduleName = if (xmlFile != null) {
                     getModuleNameFromXml(xmlFile, module)
@@ -143,14 +157,13 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
      * @throws GradleException 모듈의 `.gwt.xml` 파일을 찾을 수 없는 경우
      */
     private fun ensureTestHtmlFileForModule(module: String) {
-        val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
         val packagePath = module.replace('.', '/')
-        val xmlFile = findXmlFileInSourceSets(sourceSets, "$packagePath.gwt.xml")
+        val xmlFile = findXmlFile("$packagePath.gwt.xml")
             ?: throw GradleException("XML 파일을 찾을 수 없습니다: $packagePath.gwt.xml")
 
         val moduleName = getModuleNameFromXml(xmlFile, module)
         val htmlFile = ensureHtmlFileExists(war.get().asFile, moduleName)
-        project.logger.info("모듈 HTML 파일 체크 완료: ${htmlFile.absolutePath}")
+        logger.info("모듈 HTML 파일 체크 완료: ${htmlFile.absolutePath}")
     }
     /**
      * GWT 모듈 XML 파일에서 최종 모듈 이름을 추출합니다.
@@ -168,21 +181,15 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
         return renameToAttribute.ifBlank { defaultName }
     }
     /**
-     * 모든 소스셋에서 지정된 경로의 파일을 검색합니다.
+     * [moduleSearchDirs]에서 지정된 경로의 파일을 앞에서부터 검색합니다.
      *
-     * 메인 및 테스트 소스셋의 소스 디렉토리와 리소스 디렉토리를 모두 검색합니다.
-     *
-     * @param sourceSets 검색할 소스셋 컨테이너
      * @param fullPath 찾을 파일의 상대 경로 (예: "com/example/App.gwt.xml")
      * @return 찾은 파일, 없으면 null
      */
-    private fun findXmlFileInSourceSets(sourceSets: SourceSetContainer, fullPath: String): File? =
-        sourceSets.firstNotNullOfOrNull { sourceSet ->
-            val searchDirs = sourceSet.resources.srcDirs + sourceSet.allSource.srcDirs
-            searchDirs.asSequence()
-                .map { dir -> File(dir, fullPath) }
-                .firstOrNull { it.exists() }
-        }
+    private fun findXmlFile(fullPath: String): File? =
+        moduleSearchDirs.files.asSequence()
+            .map { dir -> File(dir, fullPath) }
+            .firstOrNull { it.exists() }
     /**
      * XML 파일을 안전하게 파싱합니다.
      *
@@ -211,14 +218,14 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     private fun ensureHtmlFileExists(testDir: File, moduleName: String): File {
         val htmlFile = File(testDir, "$moduleName.html")
         if (htmlFile.exists()) {
-            project.logger.info("HTML 파일이 이미 존재합니다: ${htmlFile.absolutePath}")
+            logger.info("HTML 파일이 이미 존재합니다: ${htmlFile.absolutePath}")
             return htmlFile
         }
 
         try {
             htmlFile.parentFile.mkdirs()
             htmlFile.writeText(createHtmlContent(moduleName))
-            project.logger.lifecycle("HTML 파일이 생성되었습니다: ${htmlFile.absolutePath}")
+            logger.lifecycle("HTML 파일이 생성되었습니다: ${htmlFile.absolutePath}")
         } catch (e: IOException) {
             throw GradleException("HTML 파일 생성 중 오류가 발생했습니다: ${e.message}", e)
         }

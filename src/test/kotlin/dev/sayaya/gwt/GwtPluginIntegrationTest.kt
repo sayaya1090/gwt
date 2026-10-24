@@ -83,6 +83,29 @@ class GwtPluginIntegrationTest : DescribeSpec({
             result.task(":build")?.outcome shouldBe TaskOutcome.SUCCESS
         }
     }
+
+    describe("Configuration Cache 호환성") {
+        val projectDir = tempdir()
+        val resourceDir = File(javaClass.classLoader.getResource("GwtPluginIntegrationTest")!!.toURI())
+        resourceDir.copyRecursively(projectDir)
+
+        fun run() = GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withPluginClasspath()
+            .withArguments("gwtGenerateTestHtml", "--configuration-cache", "--stacktrace")
+            .build()
+
+        val first = run()
+        it("gwtGenerateTestHtml이 Configuration Cache 문제 없이 성공해야 함") {
+            first.task(":gwtGenerateTestHtml")?.outcome shouldBe TaskOutcome.SUCCESS
+            first.output shouldContain "Configuration cache entry stored."
+            File(projectDir, "src/test/webapp/test.html").shouldExist()
+        }
+        it("두 번째 실행은 캐시된 구성을 재사용해야 함") {
+            val second = run()
+            second.output shouldContain "Configuration cache entry reused."
+        }
+    }
 }) {
     companion object {
         /**

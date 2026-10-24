@@ -6,7 +6,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.gradle.api.services.BuildService
-import org.slf4j.LoggerFactory
+import org.gradle.api.logging.Logging
 import java.io.File
 import java.net.ServerSocket
 
@@ -17,7 +17,8 @@ import java.net.ServerSocket
  */
 abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseable {
 
-    private val logger = LoggerFactory.getLogger(WebServerService::class.java)
+    // Gradle 로그 레벨(-q, --warn 등)로 제어되는 로거
+    private val logger = Logging.getLogger(WebServerService::class.java)
 
     // Ktor 서버 인스턴스 홀더
     private lateinit var server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>
@@ -34,10 +35,10 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
         val requestedPort = parameters.port.getOrElse(ServerSocket(0).use { it.localPort })
         val targetPort = if (requestedPort == 0) ServerSocket(0).use { it.localPort } else requestedPort
 
-        // 서버 기동 시 서빙 경로를 강력하게 출력 (LIFECYCLE 수준)
-        println("Starting GWT Test Server...")
+        // 서버 기동 시 서빙 경로를 LIFECYCLE 수준으로 출력
+        logger.lifecycle("Starting GWT Test Server...")
         roots.forEach { 
-            println(" > Serving Directory: ${it.absolutePath}")
+            logger.lifecycle(" > Serving Directory: {}", it.absolutePath)
         }
 
         try {
@@ -66,9 +67,9 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
             }.start(wait = false)
 
             assignedPort = targetPort
-            println("GWT Test Server is running at http://127.0.0.1:$assignedPort")
+            logger.lifecycle("GWT Test Server is running at http://127.0.0.1:{}", assignedPort)
         } catch (e: Exception) {
-            println("Failed to start GWT Test Server: ${e.message}")
+            logger.error("Failed to start GWT Test Server: {}", e.message)
             throw e
         }
     }
@@ -85,7 +86,7 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
 
     override fun close() {
         if (::server.isInitialized) {
-            println("Stopping GWT Test Server...")
+            logger.lifecycle("Stopping GWT Test Server...")
             server.stop(500, 1000)
         }
     }

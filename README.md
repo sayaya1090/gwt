@@ -385,6 +385,10 @@ This project is available under the terms specified in the project’s license f
 ### Unreleased
 - ⚠️ **Default GWT version**: The default `gwtVersion` is now `2.13.1` (was `2.12.1`). Set `gwt { gwtVersion = "2.12.1" }` to keep the previous SDK.
 - ⬆️ **Dependency updates (`gwt-test`)**: Playwright `1.64.0`, Gson `2.15.0`.
+- 🧊 **Configuration Cache**: `gwtGenerateTestHtml` no longer accesses `Task.project` at execution time, so `--configuration-cache` builds no longer fail with `Extension of type 'SourceSetContainer' does not exist`.
+- 🧩 **Multi-module test servers**: The test web server build service is now keyed by project path (`gwtWebServer:<path>` for subprojects), so subprojects with the same name (e.g. `:a:client`, `:b:client`) no longer share one server and serve each other's `war`.
+- 🚦 **Fail fast on missing pages (`gwt-test`)**: `GwtTestSpec` now fails immediately with the URL and HTTP status when the `@GwtHtml` page returns 4xx/5xx, instead of timing out later on an empty page.
+- 🧹 Test tasks no longer get `-Dio.netty.leakDetection.level=PARANOID` (it did not affect the server, which runs in the Gradle daemon). Server start/stop messages now go through the Gradle logger (`lifecycle`).
 
 ### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.

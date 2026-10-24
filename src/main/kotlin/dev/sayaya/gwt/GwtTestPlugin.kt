@@ -1,11 +1,9 @@
-
 package dev.sayaya.gwt
 
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -44,7 +42,7 @@ class GwtTestPlugin : Plugin<Project> {
 
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
         // 1. GwtPluginExtension에 GwtTestTaskExtension 속성 추가 (ExtensionAware 활용)
-        (extension as org.gradle.api.plugins.ExtensionAware).extensions.create(GwtTestTaskExtension::class.java, "test", GwtTestTaskExtension::class.java)
+        (extension as ExtensionAware).extensions.create(GwtTestTaskExtension::class.java, "test", GwtTestTaskExtension::class.java)
 
         registerGenerateHtmlTask(project, extension)
         registerGwtTestCompileTask(project)
@@ -90,11 +88,11 @@ class GwtTestPlugin : Plugin<Project> {
      */
     private fun registerWebServerService(project: Project, extension: GwtPluginExtension) {
         val gwtTestCompile = project.tasks.named("gwtTestCompile", GwtTestCompileTask::class.java)
-        val testExtension = (extension as org.gradle.api.plugins.ExtensionAware).extensions.findByType(GwtTestTaskExtension::class.java)
+        val testExtension = (extension as ExtensionAware).extensions.findByType(GwtTestTaskExtension::class.java)
 
         // 빌드 서비스 등록
         val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
-            "gwtWebServer-${project.name}",
+            webServerServiceName(project),
             WebServerService::class.java
         ) {
             // 1. 포트 설정 전파 (결함 1번 해결)
@@ -110,8 +108,6 @@ class GwtTestPlugin : Plugin<Project> {
             parameters.contentRoot.from(gwtTestCompile.flatMap { it.war })
         }
 
-
-
         project.tasks.withType(Test::class.java).configureEach {
             this.usesService(webServerServiceProvider)
             
@@ -120,9 +116,6 @@ class GwtTestPlugin : Plugin<Project> {
                 val service = webServerServiceProvider.get()
                 listOf("-Dgwt.junit.remoteUrl=http://127.0.0.1:${service.getPort()}/")
             })
-
-            // Ktor가 사용하는 Netty의 리소스 누수 탐지기 설정
-            systemProperty("io.netty.leakDetection.level", "PARANOID")
         }
     }
 
@@ -201,5 +194,16 @@ class GwtTestPlugin : Plugin<Project> {
                 dependsOn("test")
             }
         }
+    }
+
+    companion object {
+        /**
+         * 프로젝트별 [WebServerService] 등록 이름.
+         *
+         * 빌드 서비스는 이름으로 공유되므로 빌드 안에서 유일한 [Project.getPath]를 사용합니다
+         * (예: `:a:client` → `gwtWebServer:a:client`). 루트 프로젝트는 기존 이름(`gwtWebServer-<name>`)을 유지합니다.
+         */
+        internal fun webServerServiceName(project: Project): String =
+            if (project == project.rootProject) "gwtWebServer-${project.name}" else "gwtWebServer${project.path}"
     }
 }

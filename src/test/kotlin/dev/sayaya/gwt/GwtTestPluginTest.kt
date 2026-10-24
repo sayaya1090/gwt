@@ -88,10 +88,32 @@ class GwtTestPluginTest : DescribeSpec({
                 }
                 hasRemoteUrl shouldBe true
 
-                // 2. 나머지는 기존처럼 systemProperties에서 확인
-                val systemProperties = testTask.systemProperties
-                systemProperties.containsKey("io.netty.leakDetection.level") shouldBe true
-                systemProperties["io.netty.leakDetection.level"] shouldBe "PARANOID"
+                // 2. 웹 서버는 Gradle 데몬 JVM에서 실행되므로 테스트 JVM에 Netty 누수 탐지 설정을 강제하지 않는다
+                testTask.systemProperties.containsKey("io.netty.leakDetection.level") shouldBe false
+            }
+
+            it("이름이 같은 하위 프로젝트들은 서로 다른 WebServerService를 사용해야 한다") {
+                val root = ProjectBuilder.builder().withName("root").build()
+                fun client(parentName: String): Project {
+                    val parent = ProjectBuilder.builder().withName(parentName).withParent(root).build()
+                    val child = ProjectBuilder.builder().withName("client").withParent(parent).build()
+                    child.pluginManager.apply(GwtTestPlugin::class.java)
+                    child.extensions.getByType(GwtPluginExtension::class.java).devMode.war.set(child.file("src/test/webapp"))
+                    return child
+                }
+                val a = client("a")
+                val b = client("b")
+
+                val nameA = GwtTestPlugin.webServerServiceName(a)
+                val nameB = GwtTestPlugin.webServerServiceName(b)
+                nameA shouldBe "gwtWebServer:a:client"
+                nameB shouldBe "gwtWebServer:b:client"
+
+                val registrations = root.gradle.sharedServices.registrations
+                val rootsA = (registrations.getByName(nameA).parameters as WebServerParameters).contentRoot.files
+                val rootsB = (registrations.getByName(nameB).parameters as WebServerParameters).contentRoot.files
+                rootsA shouldContain a.file("src/test/webapp")
+                rootsB shouldContain b.file("src/test/webapp")
             }
 
             it("WebServerService의 contentRoot는 gwt.devMode.war 설정을 따라야 한다") {
