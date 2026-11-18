@@ -15,6 +15,13 @@ import org.gradle.api.Project
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testfixtures.ProjectBuilder
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import java.io.File
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
+import java.lang.reflect.ParameterizedType
 
 class GwtBasePluginTest : DescribeSpec({
     lateinit var project: Project
@@ -308,6 +315,61 @@ class GwtBasePluginTest : DescribeSpec({
             shouldNotThrowAny { project.tasks.getByName("test") }
             project.configurations.getByName("testImplementation").extendsFrom.map { it.name } shouldContain
                 GwtBasePlugin.GWT_DEV_RUNTIME_CLASSPATH_CONFIGURATION_NAME
+        }
+    }
+
+    describe("옵션 연결 누락 방지") {
+        it("GwtOptions의 모든 공통 옵션은 devMode·compiler로 상속되고 gwtCompile·gwtDevMode 태스크에 연결된다") {
+            // extraSourceDirs는 상속하지 않고 태스크에서 합산하므로 제외한다.
+            val getters = GwtOptions::class.java.declaredMethods.filter {
+                it.name.startsWith("get") && it.parameterCount == 0 && Modifier.isAbstract(it.modifiers) &&
+                    it.name != "getExtraSourceDirs"
+            }
+            (getters.size > 10) shouldBe true
+
+            fun sample(m: Method): Any {
+                val name = m.name.removePrefix("get")
+                if (DirectoryProperty::class.java.isAssignableFrom(m.returnType)) return project.file("opt/$name")
+                if (ListProperty::class.java.isAssignableFrom(m.returnType)) return listOf("v-$name")
+                return when ((m.genericReturnType as ParameterizedType).actualTypeArguments.single()) {
+                    java.lang.Boolean::class.java -> true
+                    java.lang.Integer::class.java -> 7
+                    else -> "v-$name"
+                }
+            }
+            fun valueOf(p: Any?): Any? = when (p) {
+                is DirectoryProperty -> p.orNull?.asFile
+                is org.gradle.api.provider.Provider<*> -> p.orNull
+                else -> error("unexpected property type: $p")
+            }
+            @Suppress("UNCHECKED_CAST")
+            fun assign(p: Any?, v: Any) = when (p) {
+                is DirectoryProperty -> p.set(v as File)
+                is ListProperty<*> -> (p as ListProperty<String>).set(v as List<String>)
+                is Property<*> -> (p as Property<Any>).set(v)
+                else -> error("unexpected property type: $p")
+            }
+            // 태스크 쪽 이름이 다른 옵션
+            fun taskGetter(name: String) = when (name) {
+                "getMinHeapSize" -> "getGwtMinHeapSize"
+                "getMaxHeapSize" -> "getGwtMaxHeapSize"
+                else -> name
+            }
+
+            val tasks = listOf(project.tasks.getByName("gwtCompile"), project.tasks.getByName("gwtDevMode"))
+            val missing = mutableListOf<String>()
+            getters.forEach { m ->
+                val expected = sample(m)
+                assign(m.invoke(gwt), expected)
+                listOf("devMode" to gwt.devMode, "compiler" to gwt.compiler).forEach { (block, options) ->
+                    if (valueOf(m.invoke(options)) != expected) missing += "$block.${m.name}"
+                }
+                tasks.forEach { task ->
+                    val actual = valueOf(task.javaClass.getMethod(taskGetter(m.name)).invoke(task))
+                    if (actual != expected) missing += "${task.name}.${m.name}"
+                }
+            }
+            missing shouldBe emptyList()
         }
     }
 
