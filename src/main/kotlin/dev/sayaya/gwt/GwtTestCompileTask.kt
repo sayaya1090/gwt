@@ -25,7 +25,7 @@ import javax.inject.Inject
  * ```
  *
  * ## 주의사항
- * - [GwtBasePlugin]이 적용된 프로젝트에서만 생성할 수 있습니다(`gwt` 확장 필요).
+ * - 옵션 연결과 `gwtGenerateTestHtml` 의존은 [GwtTestPlugin]이 `gwtTestCompile`을 등록할 때 구성합니다.
  *
  * @see GwtCompileTask
  * @see GwtGenerateTestHtmlTask
@@ -36,11 +36,5 @@ abstract class GwtTestCompileTask @Inject constructor() : GwtCompileTask() {
 
     init {
         description = "Compiles GWT test sources with main sources"
-        dependsOn("gwtGenerateTestHtml")
-
-        val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-        configureFrom(extension.devMode)
-        configureCompilerFrom(extension.compiler)
-        extraSourceDirs.from(extension.extraSourceDirs, extension.devMode.extraSourceDirs)
     }
 }

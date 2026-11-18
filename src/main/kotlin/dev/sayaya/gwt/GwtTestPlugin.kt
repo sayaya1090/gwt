@@ -41,12 +41,13 @@ class GwtTestPlugin : Plugin<Project> {
         applyRequiredPlugins(project)
 
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
-        // 1. GwtPluginExtension에 GwtTestTaskExtension 속성 추가 (ExtensionAware 활용)
-        (extension as ExtensionAware).extensions.create(GwtTestTaskExtension::class.java, "test", GwtTestTaskExtension::class.java)
+        // gwt { test { webPort = ... } } 하위 블록
+        val testExtension = (extension as ExtensionAware).extensions
+            .create(GwtTestTaskExtension::class.java, "test", GwtTestTaskExtension::class.java)
 
         registerGenerateHtmlTask(project, extension)
-        registerGwtTestCompileTask(project)
-        registerWebServerService(project, extension)
+        registerGwtTestCompileTask(project, extension)
+        registerWebServerService(project, extension, testExtension)
 
         configureGwtDevMode(project)
         configureJavaCompile(project)
@@ -69,46 +70,58 @@ class GwtTestPlugin : Plugin<Project> {
         project: Project,
         extension: GwtPluginExtension
     ): TaskProvider<GwtGenerateTestHtmlTask> =
-        project.tasks.register("gwtGenerateTestHtml", GwtGenerateTestHtmlTask::class.java, Action<GwtGenerateTestHtmlTask> {
+        project.tasks.register(GWT_GENERATE_TEST_HTML_TASK_NAME, GwtGenerateTestHtmlTask::class.java, Action<GwtGenerateTestHtmlTask> {
             modules.set(extension.devMode.modules.orElse(extension.modules))
             war.set(extension.devMode.war.orElse(extension.war))
         })
 
     /**
      * GWT 테스트 컴파일 태스크를 등록합니다.
+     *
+     * 공통 옵션은 `devMode { }`(미지정 시 상위 `gwt`), 컴파일러 전용 옵션은 `compiler { }`를 따르며,
+     * HTML 호스트 파일 생성 이후에 실행됩니다. `gwtCompile`과 같이 등록 시점에 구성합니다.
      */
-    private fun registerGwtTestCompileTask(project: Project): TaskProvider<GwtTestCompileTask> =
-        project.tasks.register("gwtTestCompile", GwtTestCompileTask::class.java)
+    private fun registerGwtTestCompileTask(
+        project: Project,
+        extension: GwtPluginExtension
+    ): TaskProvider<GwtTestCompileTask> =
+        project.tasks.register(GWT_TEST_COMPILE_TASK_NAME, GwtTestCompileTask::class.java) {
+            dependsOn(GWT_GENERATE_TEST_HTML_TASK_NAME)
+            configureFrom(extension.devMode)
+            configureCompilerFrom(extension.compiler)
+            extraSourceDirs.from(extension.extraSourceDirs, extension.devMode.extraSourceDirs)
+        }
 
     /**
      * 웹 서버 빌드 서비스를 등록하고 테스트 태스크가 이를 사용하도록 구성합니다.
      */
-    private fun registerWebServerService(project: Project, extension: GwtPluginExtension) {
-        val gwtTestCompile = project.tasks.named("gwtTestCompile", GwtTestCompileTask::class.java)
-        val testExtension = (extension as ExtensionAware).extensions.findByType(GwtTestTaskExtension::class.java)
+    private fun registerWebServerService(
+        project: Project,
+        extension: GwtPluginExtension,
+        testExtension: GwtTestTaskExtension
+    ) {
+        val gwtTestCompile = project.tasks.named(GWT_TEST_COMPILE_TASK_NAME, GwtTestCompileTask::class.java)
 
         // 빌드 서비스 등록
         val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
             webServerServiceName(project),
             WebServerService::class.java
         ) {
-            // 1. 포트 설정 전파 (결함 1번 해결)
-            testExtension?.let {
-                parameters.port.set(it.webPort)
-            }
+            // gwt { test { webPort } }. 미지정 또는 0이면 서버가 빈 포트를 고른다.
+            parameters.port.set(testExtension.webPort)
 
-            // 2. 사용자가 설정한 war 디렉토리 추가 (소스 리소스)
+            // 사용자가 설정한 war 디렉토리 (소스 리소스)
             val warDir = extension.devMode.war.orElse(extension.war)
             parameters.contentRoot.from(warDir)
 
-            // 3. GWT 컴파일러의 실제 출력 디렉토리를 명시적으로 추가 (번들 JS 및 복사된 테스트 리소스 포함)
+            // gwtTestCompile의 실제 출력 디렉토리 (번들 JS 및 복사된 테스트 리소스 포함)
             parameters.contentRoot.from(gwtTestCompile.flatMap { it.war })
         }
 
         project.tasks.withType(Test::class.java).configureEach {
             this.usesService(webServerServiceProvider)
             
-            // JVM 인자 제공자를 통해 지연 평가 구현 (결함 해결)
+            // 서버는 처음 쓰일 때 기동하므로, 실제 포트는 테스트 JVM 인자를 만들 때 지연 조회한다.
             jvmArgumentProviders.add(org.gradle.process.CommandLineArgumentProvider {
                 val service = webServerServiceProvider.get()
                 listOf("-Dgwt.junit.remoteUrl=http://127.0.0.1:${service.getPort()}/")
@@ -126,8 +139,8 @@ class GwtTestPlugin : Plugin<Project> {
      * 지연 평가되는 FileCollection이므로 사용자가 나중에 추가한 extraSourceDirs와도 합산됩니다.
      */
     private fun configureGwtDevMode(project: Project) {
-        project.tasks.named("gwtDevMode", GwtDevModeTask::class.java).configure {
-            dependsOn("gwtGenerateTestHtml")
+        project.tasks.named(GwtBasePlugin.GWT_DEV_MODE_TASK_NAME, GwtDevModeTask::class.java).configure {
+            dependsOn(GWT_GENERATE_TEST_HTML_TASK_NAME)
         }
 
         val extension = project.extensions.getByType(GwtPluginExtension::class.java)
@@ -165,7 +178,7 @@ class GwtTestPlugin : Plugin<Project> {
     private fun configureTestTasks(project: Project) {
         project.tasks.withType(Test::class.java).configureEach {
             useJUnitPlatform()
-            dependsOn("gwtTestCompile")
+            dependsOn(GWT_TEST_COMPILE_TASK_NAME)
         }
     }
 
@@ -183,6 +196,9 @@ class GwtTestPlugin : Plugin<Project> {
     }
 
     companion object {
+        const val GWT_GENERATE_TEST_HTML_TASK_NAME = "gwtGenerateTestHtml"
+        const val GWT_TEST_COMPILE_TASK_NAME = "gwtTestCompile"
+
         /**
          * 프로젝트별 [WebServerService] 등록 이름.
          *
