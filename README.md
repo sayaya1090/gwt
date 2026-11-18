@@ -395,6 +395,7 @@ This project is available under the terms specified in the project’s license f
 - 🐢 **No dependency resolution at configuration time (Lombok)**: `dev.sayaya.gwt.lombok` now locates the Lombok jar when a GWT task runs, instead of resolving `annotationProcessor` during `afterEvaluate`.
 - 🧹 **No duplicate GWT classpath entries**: `gwtTestCompile` no longer modifies `gwt.devMode.extraSourceDirs` when it is created; the test plugin adds only the test source directories and the test runtime classpath once (main sources/outputs are already on the GWT classpath).
 - 🛠️ **Late `Test` task creation fixed**: `<test>Implementation` now extends `gwtDevRuntimeClasspath` right after evaluation instead of when the `Test` task is created, so creating the task after the test classpath was resolved no longer fails with `Could not create task ':test'`.
+- 🧩 **`jakarta = true` no longer excludes `jakarta.servlet-api`**: The `jakarta.servlet:jakarta.servlet-api` exclusion is now applied only when `gwt { jakarta }` is `false` (javax `gwt-servlet`). Previously it was applied to every configuration even with `jakarta = true`, so a directly declared `jakarta.servlet-api` was dropped.
 
 ### 2.3.0 (Latest)
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.

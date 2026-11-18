@@ -4,11 +4,13 @@ import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.process.CommandLineArgumentProvider
 
 /**
  * GWT 테스트 컴파일 및 개발 모드를 설정하는 플러그인입니다.
@@ -47,11 +49,11 @@ class GwtTestPlugin : Plugin<Project> {
 
         registerGenerateHtmlTask(project, extension)
         registerGwtTestCompileTask(project, extension)
-        registerWebServerService(project, extension, testExtension)
+        val webServer = registerWebServerService(project, extension, testExtension)
 
         configureGwtDevMode(project)
         configureJavaCompile(project)
-        configureTestTasks(project)
+        configureTestTasks(project, webServer)
         configureWarTask(project)
     }
 
@@ -93,17 +95,17 @@ class GwtTestPlugin : Plugin<Project> {
         }
 
     /**
-     * 웹 서버 빌드 서비스를 등록하고 테스트 태스크가 이를 사용하도록 구성합니다.
+     * 프로젝트별 웹 서버 빌드 서비스를 등록합니다. Test 태스크와의 연결은 [configureTestTasks]가 합니다.
      */
     private fun registerWebServerService(
         project: Project,
         extension: GwtPluginExtension,
         testExtension: GwtTestTaskExtension
-    ) {
+    ): Provider<WebServerService> {
         val gwtTestCompile = project.tasks.named(GWT_TEST_COMPILE_TASK_NAME, GwtTestCompileTask::class.java)
 
         // 빌드 서비스 등록
-        val webServerServiceProvider = project.gradle.sharedServices.registerIfAbsent(
+        return project.gradle.sharedServices.registerIfAbsent(
             webServerServiceName(project),
             WebServerService::class.java
         ) {
@@ -116,16 +118,6 @@ class GwtTestPlugin : Plugin<Project> {
 
             // gwtTestCompile의 실제 출력 디렉토리 (번들 JS 및 복사된 테스트 리소스 포함)
             parameters.contentRoot.from(gwtTestCompile.flatMap { it.war })
-        }
-
-        project.tasks.withType(Test::class.java).configureEach {
-            this.usesService(webServerServiceProvider)
-            
-            // 서버는 처음 쓰일 때 기동하므로, 실제 포트는 테스트 JVM 인자를 만들 때 지연 조회한다.
-            jvmArgumentProviders.add(org.gradle.process.CommandLineArgumentProvider {
-                val service = webServerServiceProvider.get()
-                listOf("-Dgwt.junit.remoteUrl=http://127.0.0.1:${service.getPort()}/")
-            })
         }
     }
 
@@ -172,13 +164,20 @@ class GwtTestPlugin : Plugin<Project> {
     /**
      * Test 태스크를 구성합니다.
      *
-     * - JUnit Platform 사용 설정
-     * - 웹 서버 시작/종료 의존성 설정
+     * - JUnit Platform 사용, `gwtTestCompile` 선행
+     * - 웹 서버 서비스 사용 선언과 실제 포트를 담은 `-Dgwt.junit.remoteUrl` 전달
+     *
+     * 힙 크기·`gwt.args`·클래스패스 등 GWT 공통 Test 구성은 [GwtBasePlugin]이 담당합니다.
      */
-    private fun configureTestTasks(project: Project) {
+    private fun configureTestTasks(project: Project, webServer: Provider<WebServerService>) {
         project.tasks.withType(Test::class.java).configureEach {
             useJUnitPlatform()
             dependsOn(GWT_TEST_COMPILE_TASK_NAME)
+            usesService(webServer)
+            // 서버는 처음 쓰일 때 기동하므로, 실제 포트는 테스트 JVM 인자를 만들 때 지연 조회한다.
+            jvmArgumentProviders.add(CommandLineArgumentProvider {
+                listOf("-Dgwt.junit.remoteUrl=http://127.0.0.1:${webServer.get().getPort()}/")
+            })
         }
     }
 
