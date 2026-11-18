@@ -336,7 +336,7 @@ war
 - `gwtGenerateTestHtml`: Automatically generates HTML host files for GWT test modules.
 - `gwtTestCompile`: Compiles GWT test modules (includes both main and test sources).
 - `gwtDevMode`: Runs GWT Dev Mode including test sources.
-- WebServerService: A shared build service that hosts the static files. It starts automatically when `test` begins and stops when the build completes.
+- WebServerService: A shared build service that hosts the static files, registered once per project (`gwtWebServer-<name>` for the root project, `gwtWebServer:<path>` for subprojects) and shared by that project's `Test` tasks. It starts automatically when `test` begins, picks a free port unless `gwt { test { webPort } }` is set, and is closed (`close()`) when the build completes.
 
 ## Troubleshooting
 ### Cannot Find Module XML

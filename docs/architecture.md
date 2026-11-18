@@ -13,7 +13,7 @@
 
 ### Layer 2: Infrastructure Layer (실행 환경)
 테스트 리소스를 제공하기 위한 런타임 인프라를 담당합니다.
-- **Build Service**: `WebServerService`. Gradle의 Shared Build Service를 통해 빌드 수명 주기 동안 하나의 Ktor 서버 인스턴스를 유지 및 관리.
+- **Build Service**: `WebServerService`. Gradle의 Shared Build Service로 등록되며, **프로젝트마다** Ktor 서버 인스턴스 하나를 유지·관리합니다(등록 이름: 루트 `gwtWebServer-<name>`, 하위 프로젝트 `gwtWebServer:<path>`).
 - **Server**: Ktor (Netty). GWT 컴파일된 JS와 HTML 파일을 서빙하는 경량 웹 서버.
 
 ### Layer 3: Testing Framework Layer (검증 도구)
@@ -26,13 +26,16 @@
 ## 2. 핵심 설계 원칙
 
 ### 2.1 리소스 효율성 (Shared Build Service)
-여러 개의 테스트 태스크가 병렬로 실행되더라도, `WebServerService`는 단 하나의 서버 인스턴스만 유지합니다. 이를 통해 포트 충돌을 방지하고 메모리 사용량을 최적화하며, 빌드 종료 시 리소스를 안전하게 해제합니다.
+같은 프로젝트의 테스트 태스크들은 `WebServerService` 서버 인스턴스 하나를 공유합니다. 서비스는 프로젝트 경로로 구분되므로, 멀티 모듈 빌드에서는 모듈마다 자기 `war` 디렉토리를 서빙하는 서버가 따로 뜹니다(이름이 같은 하위 모듈도 서로 섞이지 않음). 포트는 `webPort`를 지정하지 않으면 Netty가 빈 포트를 직접 고르므로 모듈 간 포트 충돌이 없고, 빌드가 끝나면 Gradle이 `close()`를 호출해 서버를 해제합니다.
 
 ### 2.2 테스트 격리 및 자동화 (Task Dependency)
 사용자가 `./gradlew test`를 호출하면, 플러그인은 태스크 의존성(dependsOn)을 통해 HTML 생성 및 GWT 컴파일이 선행되도록 보장합니다. 개발자는 복잡한 준비 과정 없이 테스트 코드 작성에만 집중할 수 있습니다.
 
 ### 2.3 투명한 로깅 (Console Interception)
 브라우저 내부에서 발생하는 GWT 로그를 Playwright의 리스너를 통해 캡처하여 테스트 결과 리포트에 투명하게 노출합니다. 이는 브라우저 기반 테스트의 디버깅 난이도를 대폭 낮춰줍니다.
+
+### 2.4 설정 단계 최소화 (Configuration Cache 호환)
+태스크는 실행 시점에 `Task.project`를 참조하지 않고, 의존성 해석(예: Lombok jar 탐색)은 태스크 실행 시점으로 미룹니다. 따라서 `--configuration-cache`로 빌드할 수 있으며, 설정 단계에서 불필요한 의존성 해석이 일어나지 않습니다.
 
 ---
 
