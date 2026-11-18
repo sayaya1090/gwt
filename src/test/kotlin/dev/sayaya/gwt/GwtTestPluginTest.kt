@@ -139,6 +139,23 @@ class GwtTestPluginTest : DescribeSpec({
                 parameters.port.get() shouldBe targetPort
             }
         }
+        context("Jakarta Servlet API 제외") {
+            fun jakartaExcluded(configuration: String): Boolean =
+                project.configurations.getByName(configuration).excludeRules
+                    .any { it.group == "jakarta.servlet" && it.module == "jakarta.servlet-api" }
+
+            it("jakarta가 false(기본값)이면 jakarta.servlet-api를 제외한다") {
+                (project as org.gradle.api.internal.project.ProjectInternal).evaluate()
+                jakartaExcluded("implementation") shouldBe true
+                jakartaExcluded("testRuntimeClasspath") shouldBe true
+            }
+            it("jakarta가 true이면 jakarta.servlet-api를 제외하지 않는다") {
+                project.extensions.getByType(GwtPluginExtension::class.java).jakarta.set(true)
+                (project as org.gradle.api.internal.project.ProjectInternal).evaluate()
+                jakartaExcluded("implementation") shouldBe false
+                jakartaExcluded("testRuntimeClasspath") shouldBe false
+            }
+        }
         context("'war' 플러그인과 함께 적용 시") {
             it("'war' 태스크는 'test' 태스크에 의존해야 한다") {
                 // 'war' 플러그인을 적용합니다.

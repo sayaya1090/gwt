@@ -82,6 +82,9 @@ class GwtBasePlugin : Plugin<Project> {
         dependencies.add(GWT_DEV_CONFIGURATION_NAME, "org.gwtproject:gwt-dev")
         dependencies.add(GWT_DEV_CONFIGURATION_NAME, "org.gwtproject:gwt-user")
         dependencies.add(GWT_DEV_CONFIGURATION_NAME, "org.gwtproject:gwt-codeserver")
+        // javax 기반 gwt-servlet을 쓸 때만 jakarta.servlet-api와의 충돌을 막는다.
+        // jakarta = true이면 사용자가 jakarta.servlet-api를 직접 선언해야 하므로 제외하지 않는다.
+        if (!extension.jakarta.get()) project.excludeJakartaServletApi()
 
         val extraSourceDirs = extension.extraSourceDirs.files
         if (extraSourceDirs.isNotEmpty()) {

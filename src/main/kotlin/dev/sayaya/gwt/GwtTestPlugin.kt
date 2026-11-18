@@ -58,11 +58,8 @@ class GwtTestPlugin : Plugin<Project> {
      * 필수 플러그인을 적용하고 기본 설정을 수행합니다.
      */
     private fun applyRequiredPlugins(project: Project) {
-        project.plugins.apply("java")
+        // java 플러그인과 Jakarta Servlet API 제외는 GwtBasePlugin이 처리한다.
         project.plugins.apply(GwtBasePlugin::class.java)
-
-        // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
-        project.excludeJakartaServletApi()
     }
 
     /**

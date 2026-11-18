@@ -18,11 +18,8 @@ import org.gradle.process.CommandLineArgumentProvider
  */
 class GwtLombokPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        project.plugins.apply("java")
+        // java 플러그인과 Jakarta Servlet API 제외는 GwtBasePlugin이 처리한다.
         project.plugins.apply(GwtBasePlugin::class.java)
-
-        // Jakarta Servlet API 충돌 방지 (공통 유틸리티 함수 사용)
-        project.excludeJakartaServletApi()
 
         project.extensions.getByType(SourceSetContainer::class.java).apply {
             named("main") {
