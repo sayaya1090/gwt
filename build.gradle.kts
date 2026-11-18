@@ -21,11 +21,11 @@ subprojects {
     apply(plugin = "kotlin")
 }
 dependencies {
-    implementation("io.ktor:ktor-server-core:3.6.0")
-    implementation("io.ktor:ktor-server-netty:3.6.0")
+    implementation("io.ktor:ktor-server-core:3.6.1")
+    implementation("io.ktor:ktor-server-netty:3.6.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     // 테스트 구현에 필요한 의존성
-    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.7")
     kover(project(":test"))
 }
 gradlePlugin {

@@ -13,7 +13,7 @@ group = "com.example"
 dependencies {
     implementation("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
-    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.7")
 }
 tasks {
     gwt {

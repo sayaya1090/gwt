@@ -123,7 +123,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.48")
 
     // Tests
-    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.7")
 }
 
 gwt {
@@ -292,7 +292,7 @@ class UserInterfaceTest : GwtTestSpec({
 
 ### Gradle Plugin
 
-- Gradle 9.3+ (verified with 9.3.0, 9.4.1 and 9.8.2)
+- Gradle 9.3+ (verified with 9.3.0, 9.4.1, 9.8.2 and 9.9.1)
 - Java 17+
 - GWT 2.12+ (default `gwtVersion` 2.13.1; verified with 2.13.0 and 2.13.1)
 - No third-party GWT Gradle plugin required (`org.docstr.gwt` is no longer used)
@@ -384,7 +384,7 @@ This project is available under the terms specified in the project’s license f
 
 ### Unreleased
 - ⚠️ **Default GWT version**: The default `gwtVersion` is now `2.13.1` (was `2.12.1`). Set `gwt { gwtVersion = "2.12.1" }` to keep the previous SDK.
-- ⬆️ **Dependency updates (`gwt-test`)**: Playwright `1.64.0`, Gson `2.15.0`.
+- ⬆️ **Dependency updates (`gwt-test`)**: Playwright `1.65.0`, Kotest `6.2.7`, Gson `2.15.0`. Test server: Ktor `3.6.1`.
 - 🧊 **Configuration Cache**: `gwtGenerateTestHtml` no longer accesses `Task.project` at execution time, so `--configuration-cache` builds no longer fail with `Extension of type 'SourceSetContainer' does not exist`.
 - 🧩 **Multi-module test servers**: The test web server build service is now keyed by project path (`gwtWebServer:<path>` for subprojects), so subprojects with the same name (e.g. `:a:client`, `:b:client`) no longer share one server and serve each other's `war`.
 - 🚦 **Fail fast on missing pages (`gwt-test`)**: `GwtTestSpec` now fails immediately with the URL and HTTP status when the `@GwtHtml` page returns 4xx/5xx, instead of timing out later on an empty page.

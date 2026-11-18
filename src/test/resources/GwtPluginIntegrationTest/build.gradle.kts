@@ -11,13 +11,13 @@ version = "1.0.0"
 group = "com.example"
 
 dependencies {
-    implementation("com.google.elemental2:elemental2-dom:1.3.2")
+    implementation("com.google.elemental2:elemental2-dom:1.4.0")
 
     implementation("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
 
-    testImplementation("io.kotest:kotest-runner-junit5:6.2.6")
-    testImplementation("com.microsoft.playwright:playwright:1.64.0")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.7")
+    testImplementation("com.microsoft.playwright:playwright:1.65.0")
 }
 
 tasks {
