@@ -28,7 +28,7 @@ Add the plugin to the `plugins` block in your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("dev.sayaya.gwt") version "2.3.0"
+    id("dev.sayaya.gwt") version "2.4.0"
 }
 ```
 
@@ -36,7 +36,7 @@ plugins {
 
 ```groovy
 plugins {
-    id 'dev.sayaya.gwt' version '2.3.0'
+    id 'dev.sayaya.gwt' version '2.4.0'
 }
 ```
 
@@ -46,7 +46,7 @@ If you want to write browser tests using kotest + playwright:
 
 ```kotlin
 dependencies {
-    testImplementation("dev.sayaya:gwt-test:2.3.0")
+    testImplementation("dev.sayaya:gwt-test:2.4.0")
 }
 ```
 
@@ -106,7 +106,7 @@ Runs tests (automatically depends on `gwtTestCompile` and uses the Web Server Se
 ```kotlin
 plugins {
     kotlin("jvm") version "2.4.21"
-    id("dev.sayaya.gwt") version "2.3.0"
+    id("dev.sayaya.gwt") version "2.4.0"
     id("war")
 }
 
@@ -382,7 +382,7 @@ This project is available under the terms specified in the project’s license f
 
 ## 📝 Changelog
 
-### Unreleased
+### 2.4.0 (Latest)
 - ⚠️ **Default GWT version**: The default `gwtVersion` is now `2.13.1` (was `2.12.1`). Set `gwt { gwtVersion = "2.12.1" }` to keep the previous SDK.
 - ⬆️ **Dependency updates (`gwt-test`)**: Playwright `1.65.0`, Kotest `6.2.7`, Gson `2.15.0`. Test server: Ktor `3.6.1`.
 - 🧊 **Configuration Cache**: `gwtGenerateTestHtml` no longer accesses `Task.project` at execution time, so `--configuration-cache` builds no longer fail with `Extension of type 'SourceSetContainer' does not exist`.
@@ -397,7 +397,7 @@ This project is available under the terms specified in the project’s license f
 - 🛠️ **Late `Test` task creation fixed**: `<test>Implementation` now extends `gwtDevRuntimeClasspath` right after evaluation instead of when the `Test` task is created, so creating the task after the test classpath was resolved no longer fails with `Could not create task ':test'`.
 - 🧩 **`jakarta = true` no longer excludes `jakarta.servlet-api`**: The `jakarta.servlet:jakarta.servlet-api` exclusion is now applied only when `gwt { jakarta }` is `false` (javax `gwt-servlet`). Previously it was applied to every configuration even with `jakarta = true`, so a directly declared `jakarta.servlet-api` was dropped.
 
-### 2.3.0 (Latest)
+### 2.3.0
 - 🧩 **No third-party GWT plugin dependency**: Removed the dependency on `org.docstr.gwt`. The plugin now provides its own `gwt { }` extension, `gwtCompile` and `gwtDevMode` tasks, and adds GWT SDK dependencies (`org.gwtproject:gwt` BOM, `gwt-dev`, `gwt-user`, `gwt-codeserver`, `gwt-servlet`) automatically.
 - ✅ **Compatible DSL**: Common options (`gwtVersion`, `modules`, `war`, `sourceLevel`, `minHeapSize`, `maxHeapSize`, `extraSourceDirs`, etc.), the `compiler { }` block (`strict`, `optimize`, `draftCompile`, ...; applied to both `gwtCompile` and `gwtTestCompile`), the `devMode { }` block, and the `gwtCompile` / `gwtDevMode` task names are unchanged.
 - 🧪 **Test task defaults preserved**: Like `org.docstr.gwt`, every `Test` task gets the GWT heap size (`devMode` → `gwt` → 256M/512M), the `gwt.args` (`-war -deploy -extra`) and `gwt.persistentunitcachedir` system properties, main/test source directories on the test classpath, and `testImplementation` extending `gwtDevRuntimeClasspath`.
