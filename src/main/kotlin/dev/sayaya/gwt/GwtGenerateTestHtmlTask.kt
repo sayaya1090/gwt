@@ -138,16 +138,8 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
     val outputHtmlFiles: Provider<List<File>>
         get() = modules.map { moduleList ->
             moduleList.map { module ->
-                val packagePath = module.replace('.', '/')
-                val xmlFile = findXmlFile("$packagePath.gwt.xml")
-
-                val moduleName = if (xmlFile != null) {
-                    getModuleNameFromXml(xmlFile, module)
-                } else {
-                    module
-                }
-
-                File(war.get().asFile, "$moduleName.html")
+                // 출력 경로 계산 시에는 XML이 없어도 실패하지 않고 모듈 이름을 그대로 쓴다.
+                File(war.get().asFile, "${resolveModuleName(module) ?: module}.html")
             }
         }
     /**
@@ -157,14 +149,22 @@ abstract class GwtGenerateTestHtmlTask : DefaultTask() {
      * @throws GradleException 모듈의 `.gwt.xml` 파일을 찾을 수 없는 경우
      */
     private fun ensureTestHtmlFileForModule(module: String) {
-        val packagePath = module.replace('.', '/')
-        val xmlFile = findXmlFile("$packagePath.gwt.xml")
-            ?: throw GradleException("XML 파일을 찾을 수 없습니다: $packagePath.gwt.xml")
-
-        val moduleName = getModuleNameFromXml(xmlFile, module)
+        val moduleName = resolveModuleName(module)
+            ?: throw GradleException("XML 파일을 찾을 수 없습니다: ${moduleXmlPath(module)}")
         val htmlFile = ensureHtmlFileExists(war.get().asFile, moduleName)
         logger.info("모듈 HTML 파일 체크 완료: ${htmlFile.absolutePath}")
     }
+    /** 모듈 이름(예: `com.example.App`)에 대응하는 `.gwt.xml` 상대 경로(`com/example/App.gwt.xml`). */
+    private fun moduleXmlPath(module: String): String = "${module.replace('.', '/')}.gwt.xml"
+
+    /**
+     * 모듈의 최종 이름(`rename-to`가 있으면 그 값, 없으면 모듈 이름)을 구합니다.
+     *
+     * @return 모듈 `.gwt.xml`을 [moduleSearchDirs]에서 찾지 못하면 `null`
+     */
+    private fun resolveModuleName(module: String): String? =
+        findXmlFile(moduleXmlPath(module))?.let { getModuleNameFromXml(it, module) }
+
     /**
      * GWT 모듈 XML 파일에서 최종 모듈 이름을 추출합니다.
      *

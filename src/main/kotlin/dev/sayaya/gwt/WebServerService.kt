@@ -49,19 +49,13 @@ abstract class WebServerService : BuildService<WebServerParameters>, AutoCloseab
                     get("/{staticPath...}") {
                         val pathSegments = call.parameters.getAll("staticPath") ?: emptyList()
                         val relativePath = pathSegments.joinToString("/")
-                        
-                        val file = findFile(roots, relativePath)
+                        // 요청 경로를 모든 루트에서 먼저 찾고, 없으면 디렉토리의 index.html을 찾는다.
+                        val indexPath = if (relativePath.isEmpty()) "index.html" else "$relativePath/index.html"
+                        val file = listOf(relativePath, indexPath).firstNotNullOfOrNull { findFile(roots, it) }
                         if (file != null) {
                             call.respondFile(file)
                         } else {
-                            // index.html 처리
-                            val indexPath = if (relativePath.isEmpty()) "index.html" else "$relativePath/index.html"
-                            val indexFile = findFile(roots, indexPath)
-                            if (indexFile != null) {
-                                call.respondFile(indexFile)
-                            } else {
-                                call.respond(HttpStatusCode.NotFound, "File not found: $relativePath")
-                            }
+                            call.respond(HttpStatusCode.NotFound, "File not found: $relativePath")
                         }
                     }
                 }
